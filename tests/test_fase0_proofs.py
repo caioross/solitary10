@@ -55,11 +55,18 @@ def test_lema2_monotonia_estrita_em_divisores_proprios():
 
 
 def test_lema3_crescimento_em_e_e_cota():
+    # para potências de primo, os divisores de p^e são exatamente p^0..p^e
+    # (fatoração única), então sigma(p^e) = soma direta das potências — referência
+    # independente de sympy e da fórmula fechada, e barata mesmo para p^12.
+    # (cruzamento com _sigma_trial nos casos pequenos, onde o custo é trivial)
     for p in (3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37):
         cota = Fraction(p, p - 1)
         anterior = Fraction(1)
         for e in range(1, 13):
-            atual = Fraction(_sigma_trial(p**e), p**e)
+            sigma_e = sum(p**i for i in range(e + 1))
+            if p**e <= 10**6:
+                assert sigma_e == _sigma_trial(p**e)
+            atual = Fraction(sigma_e, p**e)
             assert anterior < atual < cota
             anterior = atual
 
