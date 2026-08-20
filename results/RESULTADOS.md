@@ -1,6 +1,6 @@
 # RESULTADOS — enunciados com rótulo (regras de rigor do CLAUDE.md)
 
-Última atualização: 2026-08-20 (Fase 0). Detalhes, provas e verificações: `FASE_0.md`.
+Última atualização: 2026-08-20 (Fase 1, Bloco 1). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
 ## Notação
 
@@ -21,6 +21,18 @@ Observação: A–D reproduzem resultados de Ward 2008 (não são novos); a prov
 é variante independente (usa só o primo forçado 13, não o par {13, 31} de Ward).
 E/E′ são consolidações aritméticas diretas das restrições da literatura — sem alegação
 de novidade (nenhuma busca por enunciado idêntico feita; valor é interno ao projeto).
+
+## Fase 1, Bloco 1 — certificados do motor de busca (FASE_1.md)
+
+| # | Enunciado | Rótulo |
+|---|---|---|
+| F | Todo amigo de 10 tem ω(N) ≥ 6 (reprodução independente de Ward 2008 pelo motor: podas exatas + fecho ciclotômico) | `[PROVADO-CONDICIONAL: Teoremas A–D e Lemas da Fase 0 + Zsygmondy/identidade ciclotômica (clássicos) + correção do motor (passada adversarial FASE_1.md §1.5) + correção do sympy nas chamadas consumidas (re-verificadas sem sympy em tests/test_motor_crosscheck.py)]` |
+| G | O menor amigo de 10, se existir, excede **10³²** (varredura exaustiva certificada de todas as assinaturas com ω ∈ {10,11,12} e N ≤ 10³²; ω ≥ 13 impossível para N ≤ 10³² pela regra do produto; 34,5 milhões de igualdades exatas testadas, zero amigos) | `[PROVADO-CONDICIONAL: Teoremas A–D e Lemas da Fase 0 + ω(N) ≥ 10 (arXiv:2310.15900) + correção do motor (§1.5)]` |
+
+Contexto de G: certifica e supera em 100× a alegação NÃO certificada "menor amigo
+> 10³⁰" (OEIS A074902, citada em arXiv:2404.00624). Fronteira honesta do motor:
+ω = 6 não é certificável só com podas de índice (`RamoNaoLimitado`) — coincide com o
+ponto onde a literatura precisou de cadeias de divisibilidade (alvo do Bloco 2).
 
 ## Verificações numéricas
 
