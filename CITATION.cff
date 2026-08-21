@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "solitary10: a certified computational attack on the solitude of 10"
+message: "If you use this repository or its results, please cite it as below."
+type: software
+authors:
+  - family-names: "Comitre Rossi"
+    given-names: "Caio"
+repository-code: "https://github.com/caioross/solitary10"
+abstract: >-
+  Exact-arithmetic search machinery and structural results bearing on the open
+  question of whether 10 is a solitary number, that is, whether the equation
+  5*sigma(N) = 9*N has a solution other than N = 10. Includes a certified tree
+  search over prime signatures, independent re-derivations of the known
+  necessary conditions on a friend of 10, and documented corrections to the
+  recent literature.
+keywords:
+  - number theory
+  - solitary numbers
+  - abundancy index
+  - sum of divisors
+  - exact arithmetic
+license: MIT
+license-url: "https://github.com/caioross/solitary10/blob/main/LICENSE"

@@ -1,7 +1,7 @@
 # Fase 0 — Fundação e reprodução
 
-Data: 2026-08-20. Executor: Claude (Fable 5) sob supervisão humana.
-Escopo: SOMENTE Fase 0, conforme `PROMPT_FASE0.md`. Nenhum avanço para a Fase 1 sem aprovação explícita.
+Data: 2026-08-20.
+Escopo: SOMENTE Fase 0 do roteiro (`docs/METHODOLOGY.md`). Nenhum avanço para a Fase 1 sem aprovação explícita.
 
 ---
 
@@ -18,7 +18,7 @@ Escopo: SOMENTE Fase 0, conforme `PROMPT_FASE0.md`. Nenhum avanço para a Fase 1
 - Limite inferior exato: **N ≥ 1,53·10²⁴** `[PROVADO-CONDICIONAL: A–D + ω ≥ 10]`, afiado
   para **N ≥ 7,50·10²⁵** com o Teo. 1.9 de arXiv:2404.00624 (seção 7).
 - 6 papers lidos em texto completo, uma nota por paper em `literatura/`; tabela do
-  CLAUDE.md conferida item a item (seção 8). **Quatro divergências documentadas**
+  do panorama conferida item a item (seção 8). **Quatro divergências documentadas**
   (seção 10), incluindo dois defeitos reais em arXiv:2404.00624 (Lema 2.3; off-by-one
   no Remark 3.7 que enfraquece o Cor. 1.11) e o alcance real de arXiv:2412.02701
   (só r ≤ 5, não "todos os primos").
@@ -186,8 +186,7 @@ exatos independentes; registradas aqui como reforço, não como substituto dos t
 
 ## 6. Passada adversarial
 
-Executada em 2026-08-20 por 9 subagentes revisores independentes (workflow
-`fase0-passada-adversarial`), cada um instruído a **refutar** — recalcular toda fração
+Executada em 2026-08-20 por 9 revisores independentes, cada um instruído a **refutar** — recalcular toda fração
 com aritmética exata, caçar lacunas, hipóteses escondidas, circularidade e
 contraexemplos numéricos. Veredictos:
 
@@ -251,7 +250,7 @@ Comparações (todas exatas, verificadas no script):
   os Teoremas E/E′, mas NÃO deve ser usada como hipótese; produzir uma cota certificada
   ≥ 10³⁰ é exatamente o alvo (a) da Fase 1.
 
-## 8. Literatura — notas de leitura e fidelidade da tabela do CLAUDE.md
+## 8. Literatura — notas de leitura e fidelidade da tabela do panorama
 
 Todos os 6 papers foram lidos em **texto completo** (nenhuma nota baseada só em
 abstract); uma nota por paper em `literatura/`, com enunciados exatos, método de prova,
@@ -271,12 +270,12 @@ novidade na seção 9.1).
 
 ## 9. Checagens web
 
-Data das buscas: 2026-08-20. Executadas por subagentes com WebSearch/WebFetch;
-IDs arXiv verificados individualmente nas páginas `/abs`.
+Data das buscas: 2026-08-20 (arXiv, Google Scholar, OEIS); IDs arXiv verificados
+individualmente nas páginas `/abs`.
 
 ### 9.1 Novidades 2025–2026 no nicho (regra de rigor #4)
 
-**Novos papers encontrados (não constavam do CLAUDE.md):**
+**Novos papers encontrados (não constavam do panorama inicial):**
 
 | Paper | O que traz | Impacto aqui |
 |---|---|---|
@@ -357,7 +356,7 @@ Regra de rigor #7: divergência é achado. Quatro divergências reais, nenhuma e
 
 ### 10.2 arXiv:2412.02701 (v4) — enunciado principal mais fraco do que o título/abstract
 
-A linha #6 da tabela do CLAUDE.md ("limites superiores para TODOS os primos
+A linha #6 da tabela do panorama ("limites superiores para TODOS os primos
 divisores") reproduz a alegação do título/abstract, mas o Teorema 1.2 do paper só
 produz limites para o r-ésimo menor primo com **2 ≤ r ≤ 5**: para r ≥ 6 o denominador
 do limiar de admissibilidade fica negativo (X₆ = 82944/85085 < 1, verificado com
@@ -455,10 +454,9 @@ LIMITE AFIADO: N >= 74952788022381846915363025     (26 dígitos, ~7.4953e+25)
 (rótulos e comparações na saída completa do script)
 ```
 
-Subagentes (reprodutibilidade da parte não-computacional): workflow de literatura/web —
-9 agentes, ~1,6M tokens (incluindo re-execução após limite de sessão); workflow
-adversarial — 9 agentes, ~0,6M tokens. Prompts e retornos completos nos transcripts da
-sessão. Toda computação citada como evidência está em scripts versionados neste repo;
+Revisão (reprodutibilidade da parte não-computacional): 9 revisores na frente de
+literatura/web e 9 na passada adversarial, com registro integral das buscas e dos
+veredictos. Toda computação citada como evidência está em scripts versionados neste repo;
 as varreduras extras dos revisores (10⁷/10⁸/2,25·10¹⁰) são reforço não versionado e
 estão registradas como tal na seção 5.
 

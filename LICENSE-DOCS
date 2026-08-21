@@ -1,0 +1,19 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Caio Comitre Rossi
+
+This license applies to the prose content of this repository: the contents of
+the directories `docs/`, `results/` and `literatura/`, together with README.md
+and any manuscript derived from them. Source code is licensed separately under
+the MIT License; see LICENSE.
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided you give appropriate credit, link to the license, and
+indicate whether changes were made.
+
+Full legal text: https://creativecommons.org/licenses/by/4.0/legalcode
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+
+Reading notes in `literatura/` summarise and quote third-party papers. Those
+papers remain under their own authors' copyright; this license covers only the
+notes themselves.
