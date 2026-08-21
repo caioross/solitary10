@@ -129,3 +129,29 @@ def test_quem_mata_os_conjuntos_do_ramo_ii():
         assert expoentes_validos_ordens(13, S) == [], P         # mas não fecha
     # e o 5 ainda tem expoente válido em {5,7,11,13,23,31}: a cadeia só fecha no 7
     assert expoentes_validos_ordens(5, frozenset({5, 7, 11, 13, 23, 31})) == [2]
+
+
+def test_planted_orcamento_v5_conta_o_sexto_primo(monkeypatch):
+    # MUTANTE CATASTRÓFICO pego pela revisão: se o orçamento v5 esquecer a
+    # contribuição do ÚLTIMO primo (range(1, len(S)-1)), este amigo genuíno é
+    # PERDIDO — nenhum outro plantio detecta, pois só aqui o alimentador do 5 é
+    # o sexto primo (31 ≡ 1 mod 5, com 5 | 4+1).
+    alvo_assin = {5: 2, 7: 2, 11: 2, 13: 2, 17: 2, 31: 4}
+    monkeypatch.setattr(omega6, "ALVO", _I(alvo_assin))
+    stats = certifica_omega6()
+    assert alvo_assin in stats.amigos
+
+
+def test_planted_expoente_nao_minimo_da_lista(monkeypatch):
+    # SEGUNDA CEGUEIRA pega pela revisão: em toda a execução real existe UMA só
+    # lista de expoentes com 2 entradas — (5, {5,7,11,13,31,71}) -> [2, 4]. Sem
+    # este teste, um mutante que descarte o último expoente de cada lista passa.
+    from core.cadeias import expoentes_validos_ordens
+    S = [5, 7, 11, 13, 31, 71]
+    assert expoentes_validos_ordens(5, frozenset(S)) == [2, 4]
+    for a5 in (2, 4):                      # o primeiro E o segundo da lista
+        alvo_assin = {5: a5, 7: 2, 11: 2, 13: 2, 31: 2, 71: 2}
+        monkeypatch.setattr(omega6, "ALVO", _I(alvo_assin))
+        stats = Stats6()
+        omega6._conjunto_completo(S, stats)   # direto: o alvo cai no ramo (ii)
+        assert alvo_assin in stats.amigos, a5

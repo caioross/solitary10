@@ -237,14 +237,20 @@ Estágio A: enumeração de prefixos C5 (DFS de índice; terminação porque nos
   (mesma fase exaustiva do ramo i). Lacunas de cobertura detectáveis levantam
   `NaoCertificavel` (falha honesta, sem certificado).
 
-No espaço real há **exatamente um** prefixo no ramo (ii): {5,7,11,13,23} — o mesmo
-que causou `RamoNaoLimitado` no Bloco 1. A pinagem mecânica dá P ∈ {3221, 31}, e os
+No espaço real, **três** prefixos têm ∏sup ≥ 9/5 — {5,7,11,13,17} (17017/9216),
+{5,7,11,13,19} (19019/10368) e {5,7,11,13,23} (2093/1152) — mas os dois primeiros
+morrem antes, pela poda-min (∏I(p²) = 1,8238 e 1,8120, ambos ≥ 9/5). Só
+{5,7,11,13,23} chega à pinagem — o mesmo prefixo que causou `RamoNaoLimitado` no
+Bloco 1. (Verificado: não há dependência de ordem — os três prefixos, se pinados,
+dariam os mesmos P ∈ {31, 3221}.) A pinagem mecânica dá P ∈ {3221, 31}, e os
 dois conjuntos completos morrem no fecho. É a automação exata do estilo de argumento
 das "cadeias" de 2404.00624.
 
 **Derivação conferida à mão** (independente do código, aritmética inteira):
-- *Caso A*: o único q ∈ C5 com q ≡ 1 (mod 5) é 11; e 5 ∉ D₁₁ (nenhum r ∈ S∪{3} tem
-  ord_r(11) = 5, pois isso exigiria 5 | r−1). Logo ord_P(11) = 5 e
+- *Caso A*: o único q ∈ C5 com q ≡ 1 (mod 5) é 11; e 5 ∉ D₁₁, onde D₁₁ é calculado
+  **apenas sobre os primos CONHECIDOS** — nenhum r ∈ C5∪{3} tem ord_r(11) = 5, pois
+  isso exigiria 5 | r−1. (A restrição a C5∪{3} é essencial: P = 3221 ≡ 1 (mod 5) e
+  ord_P(11) = 5 é justamente a *conclusão* do argumento, não uma hipótese.) Logo
   P | Φ₅(11) = σ(11⁴) = 16105 = 5 · **3221**, com 3221 primo (divisão por tentativa
   até 56). Pin: 3221.
 - *Caso B*: divisores ímpares admissíveis de a_P+1 (dividem q−1 para q ∈ C5∪{3}) =
@@ -280,11 +286,15 @@ agora passam: o certificador ACHA cada assinatura plantada exatamente.
 `python experiments/elimina_omega6.py` (código deste commit):
 
 ```
-prefixos C5: 19 (ramo i: 16, ramo ii: 1)     [2 mortos por poda-min antes do ramo]
-conjuntos completos: 2745; assinaturas testadas na igualdade: 0
+prefixos C5: 19 (ramo i: 16, ramo ii: 1, mortos por poda-min: 2)
+conjuntos completos: 2745; folhas alcancadas na fase de expoentes: 0
 pins de P testados no ramo ii: [31, 3221]
 tempo: 0.1s
 ```
+
+(O contador de folhas ser 0 implica **zero testes de igualdade executados**: o
+`rec` da fase de expoentes nunca chega a uma folha, porque em cada um dos 2 745
+conjuntos algum primo já fica sem expoente válido.)
 
 Todos os 2 745 conjuntos completos (incluindo a cadeia longa {5,7,11,13,29,p₆} com
 p₆ até 20 731 (2 312 conjuntos), análoga à "cadeia 13" da literatura) morrem no fecho de ordens —
@@ -310,8 +320,10 @@ sessão e foram relançados):
 | Alvo | Veredicto | Síntese |
 |---|---|---|
 | Pinagem do ramo (ii) | **SÓLIDA** | replay instrumentado: **todas** as 18 102 chamadas de `v_q_sigma`, 3 017 de `sigma_fecha_em`, 35 222 de `ordem_mod`, 2 924 de `nextprime` e 2 747 de `factorint` consumidas pelo certificado re-verificadas contra implementações próprias — **0 erros**; re-enumeração independente dos prefixos (17 vivos; os 19 do código são superconjunto exato, com 2 mortos por poda-min válida); cobertura dos conjuntos completos: 2 743 esperados vs 2 743 processados, faltando 0 / sobrando 0; morte dos 2 745 re-verificada com código 100% próprio (0 vivos); pinagem inteira reimplementada e varrida sobre 1 001 prefixos sintéticos — 0 divergências |
-| Cobertura do Estágio A + ramo (i) | LACUNA_MENOR | 441 alvos plantados próprios, **todos achados exatamente 1×**; campanha de **mutação dirigida** com 12 mutantes: os 6 na direção perigosa foram todos detectados (perdendo de 26 a 136 dos 136 alvos), os 6 conservadores não perdem nada — o arnês tem dentes. Fecho re-derivado do zero (sem D, sem fórmula de valuação, sem sympy): 0 sobreviventes. **Um defeito sério** (corrigido, abaixo) |
+| Cobertura do Estágio A + ramo (i) | LACUNA_MENOR | 441 alvos plantados próprios, **todos achados exatamente 1×**; campanha de **mutação dirigida** com 12 mutantes na direção perigosa, todos detectados (perdendo de 26 a 136 dos 136 alvos). Fecho re-derivado do zero (sem D, sem fórmula de valuação, sem sympy): 0 sobreviventes. **Um defeito sério** (corrigido, abaixo) |
 | Dependências e execução real | LACUNA_MENOR | pins conferidos dígito a dígito; fecho reimplementado de forma *estritamente mais permissiva* → 0 sobreviventes em 2 745; distribuição do matador: o primo 5 mata 2 669 conjuntos, o 7 mata 74, o 19 e o 13 um cada. **Rótulo desonesto** (corrigido, abaixo) |
+| Fórmula de valuação e fecho | LACUNA_MENOR | fórmula re-derivada por LTE e verificada exaustivamente para todos p,q < 220 e a = 1..45 **inclusive a ímpar** (0 divergências); os 4 elos da prova (prefixos, p₆, pinagem, morte dos 2 745) re-verificados por caminhos independentes; kills re-checados por fatoração inteira direta (2 855 candidatos m, maior m = 9 689, **zero kills falsos**) e por força bruta a = 2..160 |
+| Completude por plantios | LACUNA_MENOR | 72 assinaturas plantadas achadas (incl. o caso-borda I(N) == ALVO exato); **3 mutantes cegos descobertos** (corrigidos, abaixo) |
 
 **Correções aplicadas neste bloco em resposta:**
 
@@ -344,6 +356,37 @@ sessão e foram relançados):
    dois ramos e conta folhas alcançadas, não testes de igualdade executados).
 6. Fragmentos de docstring truncados em `omega6.py` e o número exato do maior p₆
    ({5,7,11,13,29}: p₆ ≤ **20 731**, 2 312 conjuntos) corrigidos.
+
+7. **[SÉRIO] Três mutantes catastróficos sobreviviam à suíte inteira** — descobertos
+   pela lane de plantios. O pior: fazer o orçamento v₅ **esquecer a contribuição do
+   sexto primo** passava nos 78 testes e o experimento seguia imprimindo CERTIFICADO,
+   mas **perdia um amigo genuíno** (demonstrado com o alvo I({5²,7²,11²,13²,17²,31⁴}),
+   onde 31 ≡ 1 mod 5 é o único alimentador do 5). Os outros dois: descartar o último
+   expoente de cada lista (invisível porque em toda a execução real existe **uma única**
+   lista com 2 entradas — (5, {5,7,11,13,31,71}) → [2,4]) e truncar as ordens grandes
+   (a execução real usa candidatos até m ≈ 10⁴). Os três agora morrem em testes
+   dedicados — verificado re-aplicando cada mutação: as 3 falham, uma por teste.
+8. **Retratação honesta:** a frase original desta seção — "os 6 na direção perigosa
+   foram todos detectados — o arnês tem dentes" — era **verdadeira só para os
+   mutantes daquela lane**. A lane de plantios exibiu 3 mutantes perigosos que
+   passavam. A frase foi corrigida e os buracos, fechados.
+9. Endurecimento sugerido pela revisão e aplicado: `ALVO / prod_sup > 1` →
+   `ALVO > prod_sup` (o empate agora vai comprovadamente para o ramo (ii); sob a
+   mutação oposta o laço de p₆ nunca terminaria); `v_q_sigma` recusa q = 2
+   explicitamente (a fórmula LTE só vale para q ímpar, e um alvo plantado com
+   numerador par colocaria 2 em `extras`); guarda de tamanho antes de fatorar o
+   resto do strip (fatoração ilimitada seria travamento, não falha honesta);
+   `_candidatos_m` passa a enumerar divisores em O(√m) no lugar de varrer todos os
+   ímpares até m — parede de desempenho identificada para ω ≥ 7.
+
+**Segunda perna independente para o ramo (ii)** (achado da revisão, registrado como
+dado): para **todos os 216 807 primos P ∈ (23, 3·10⁶]**, o conjunto {5,7,11,13,23,P}
+morre no fecho de ordens **sem usar a pinagem**. Além disso, estruturalmente,
+D(7) = ∅ nesse prefixo, o que força a₇+1 a ser primo ímpar e restringe fortemente P
+para qualquer tamanho. Isso dá ao ramo (ii) uma verificação independente até 3·10⁶,
+restando à pinagem a responsabilidade por P > 3·10⁶. Registre-se também que a
+pinagem **não é redundante**: em P = 2801 o primo 7 tem expoente válido ([4]), isto
+é, o "matador 7" falha e o conjunto só cai por outro primo.
 
 **Limitação registrada (não corrigida):** o ramo (ii) é estruturalmente **intestável
 por alvo plantado** — `_ramo_ii_pinagem` levanta `NaoCertificavel` para qualquer alvo

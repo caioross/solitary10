@@ -109,3 +109,22 @@ def test_candidatos_m_filtra_divisores():
     assert _candidatos_m({5, 25}) == [5, 25]
     assert _candidatos_m({15}) == []             # 3 e 5 fora de D
     assert _candidatos_m(set()) == []
+
+
+def test_ordens_grandes_nao_podem_ser_truncadas():
+    # TERCEIRA CEGUEIRA pega pela revisão: truncar ordens_impares (ex.: o < 100)
+    # ou a lista de expoentes por tamanho produz FALSOS KILLS em massa sem que
+    # nenhum teste reclame. A execução real usa candidatos m de até ~10^4:
+    # ancorar ordens grandes concretas do conjunto extremo do ramo (i).
+    S = frozenset({5, 7, 11, 13, 29, 20731})
+    assert 3455 in ordens_impares(5, S)
+    assert 2073 in ordens_impares(11, S)
+    assert 10365 in ordens_impares(13, S)
+    # e o filtro de divisores tem de aceitar m grande com todos os divisores em D
+    assert _candidatos_m({3, 5, 15, 691, 2073, 3455, 10365}) == [3, 5, 15, 691, 2073, 3455, 10365]
+
+
+def test_v_q_sigma_recusa_q_par():
+    import pytest
+    with pytest.raises(ValueError, match="ímpar"):
+        v_q_sigma(2, 5, 3)

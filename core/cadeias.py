@@ -73,6 +73,10 @@ def v_q_sigma(q: int, p: int, a: int) -> int:
     = v_q(p^o-1) + v_q(a+1) por LTE aplicado a (p^o)^{(a+1)/o} - 1.)
     Testada exaustivamente contra a valuação direta em test_cadeias.py.
     """
+    if q == 2:
+        # a fórmula (LTE) vale só para q ímpar; para a par sigma(p^a) é ímpar e 0
+        # seria correto, mas para a ímpar daria resposta errada — recusar é honesto.
+        raise ValueError("v_q_sigma exige q primo ímpar (q = 2 não é suportado)")
     if q == p:
         return 0  # sigma(p^a) ≡ 1 (mod p)
     o = ordem_mod(p, q)
@@ -139,13 +143,29 @@ def sigma_fecha_em(p: int, a: int, conjunto: frozenset[int],
     return prod == alvo
 
 
-def _candidatos_m(D: set[int]) -> list[int]:
-    """m ímpares > 1 cujos divisores > 1 estão todos em D (implica m em D)."""
-    out = []
-    for m in sorted(D):
-        if all((m % d != 0) or (d in D) for d in range(3, m, 2)):
-            out.append(m)
+def _divisores_impares_maiores_que_1(m: int) -> set[int]:
+    """Divisores ímpares > 1 de m ímpar, por divisão por tentativa até sqrt(m)."""
+    out = set()
+    d = 3
+    while d * d <= m:
+        if m % d == 0:
+            out.add(d)
+            out.add(m // d)
+        d += 2
+    if m > 1:
+        out.add(m)
     return out
+
+
+def _candidatos_m(D: set[int]) -> list[int]:
+    """m ímpares > 1 cujos divisores > 1 estão todos em D (implica m em D).
+
+    Enumera os DIVISORES de m (custo O(sqrt m)) em vez de varrer todos os ímpares
+    < m (custo O(m)): mesma semântica, e evita a parede de desempenho quando os
+    conjuntos têm primos grandes (relevante para omega >= 7).
+    """
+    return [m for m in sorted(D)
+            if _divisores_impares_maiores_que_1(m) <= D]
 
 
 def expoentes_validos_ordens(p: int, conjunto: frozenset[int],

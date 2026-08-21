@@ -271,6 +271,12 @@ def _ramo_ii_pinagem(C5: list[int], stats: Stats6) -> None:
         if a1 % 2 == 1:
             continue  # a1 é par [PROVADO, Teorema B]
         resto = _strip(sigma_pp(5, a1), set(C5) | {3})
+        if resto.bit_length() > 256:
+            # fatorar poderia rodar indefinidamente: travamento não é falha honesta
+            raise NaoCertificavel(
+                f"caso só-P com a1={a1}: resto do strip tem {resto.bit_length()} bits; "
+                "fatoração fora do orçamento — nada é certificado"
+            )
         if resto == 1:
             raise NaoCertificavel(
                 f"caso só-P com a1={a1}: sigma(5^{a1}) fecha em C5∪{{3}}, sem pin"
@@ -303,7 +309,7 @@ def certifica_omega6(stats: Stats6 | None = None) -> Stats6:
         if prod_min >= ALVO:   # I(N) > prod_min >= alvo para qualquer p6/expoentes
             stats.prefixos_mortos_min += 1
             continue
-        if ALVO / prod_sup > 1:
+        if ALVO > prod_sup:   # empate manda para o ramo (ii), que não usa índice
             stats.prefixos_ramo_i += 1
             p6 = C5[-1]
             while True:
