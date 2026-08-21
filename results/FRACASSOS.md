@@ -1,6 +1,6 @@
 # FRACASSOS — linhas de ataque abandonadas e becos sem saída
 
-Regra (CLAUDE.md, rigor #6): toda linha de ataque abandonada entra aqui com a razão
+Regra de rigor #6 (`docs/METHODOLOGY.md`): toda linha de ataque abandonada entra aqui com a razão
 precisa da falha. Fracassos são dados.
 
 Formato de entrada:
@@ -13,6 +13,25 @@ Formato de entrada:
 ```
 
 ---
+
+## [2026-08-21] Fase 1, Bloco 2 — escadas de expoentes com kills de janela (abandonada)
+
+- **O que se tentou:** para o ramo não limitado por índice do certificador ω = 6
+  (prefixo com ∏ p/(p−1) ≥ 9/5), enumerar expoentes dos 5 primos conhecidos com
+  "escadas" (a+1 = ord_P(p), família infinita) mortas por dois kills de índice
+  (K1: x ≤ 1 para sempre; K2: janela x < 1 + 1/(2m) impossível para sempre) e
+  extração exata do 6º primo do denominador de x = (9/5)/∏I.
+- **Por que falhou (razão precisa):** existe *straddle* real — no prefixo
+  {5,7,11,13,23}, o eixo do 7 tem ∏ p/(p−1)·resto a 1,5·10⁻⁵ de 9/5: K1 exige
+  I(7^a) ≥ um valor ACIMA de sup(7) (nunca) e K2 exige limite ≥ 1 (é < 1); com os
+  eixos mais profundos ainda abertos, a iteração não termina e a recursão explode
+  (constatado: timeout de 600 s nos testes plantados). A extração do último slot
+  continua correta, mas os kills de janela não fecham eixos externos.
+- **O que aproveitar:** a extração exata do último slot pelo denominador de x
+  (fração já reduzida) é válida e pode voltar a ser útil; o substituto que funcionou
+  foi a PINAGEM pela alimentação do 5 (v₅(σ(N)) = a₁−1 ≥ 1 força alimentador
+  ≡ 1 (mod 5), que pina P via Φ₅(q) ou σ(5^{a₁})) — exatamente o estilo de cadeia
+  da literatura, e fecha o ramo em duas linhas de caso.
 
 ## [2026-08-20] Fase 0 — nenhuma linha de ataque matemática abandonada
 

@@ -1,6 +1,6 @@
 # RESULTADOS — enunciados com rótulo (regras de rigor: `docs/METHODOLOGY.md`)
 
-Última atualização: 2026-08-20 (Fase 1, Bloco 1). Detalhes: `FASE_0.md`, `FASE_1.md`.
+Última atualização: 2026-08-21 (Fase 1, Bloco 2). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
 ## Notação
 
@@ -33,6 +33,18 @@ Contexto de G: certifica e supera em 100× a alegação NÃO certificada "menor 
 > 10³⁰" (OEIS A074902, citada em arXiv:2404.00624). Fronteira honesta do motor:
 ω = 6 não é certificável só com podas de índice (`RamoNaoLimitado`) — coincide com o
 ponto onde a literatura precisou de cadeias de divisibilidade (alvo do Bloco 2).
+
+## Fase 1, Bloco 2 — cadeias de divisibilidade (FASE_1.md, Bloco 2)
+
+| # | Enunciado | Rótulo |
+|---|---|---|
+| H | **Todo amigo de 10 tem ω(N) ≥ 7** (nenhum amigo tem ω = 6: 19 prefixos, 2 745 conjuntos completos, todos mortos pelo fecho de ordens; o único prefixo de espaço infinito, {5,7,11,13,23}, fechado por pinagem do 6º primo em P ∈ {31, 3221}) | `[PROVADO-CONDICIONAL: Teoremas A–D e Lemas/Fato 0 da Fase 0 + Zsygmondy e fórmula de valuação de Nielsen/Voight (clássicos; fórmula re-testada exaustivamente) + correção de core/omega6.py e core/cadeias.py (passada adversarial FASE_1.md §2.5) + correção de sympy.n_order/factorint/nextprime nas chamadas consumidas (todas re-verificadas por implementações próprias)]` |
+
+Contexto de H: reprodução **independente e mecânica** (0,1 s) do Teorema 1.2 de
+arXiv:2404.00624, cuja prova publicada é uma análise manual de 19 cadeias. A pinagem
+automática redescobre sozinha a entrada **f_3221^11 = 5** da Tabela 4 do paper
+(construída à mão pelos autores). Não é resultado novo — é validação cruzada da
+literatura por via independente, e a infraestrutura para atacar ω = 8 no Bloco 3.
 
 ## Verificações numéricas
 

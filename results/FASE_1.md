@@ -151,7 +151,7 @@ de congruência do Bloco 2 — decisão para o checkpoint humano.
 
 ### 1.5 Passada adversarial do motor
 
-Cinco revisores independentes (workflow `fase1-adversarial-motor`), instruídos a
+Cinco revisores independentes, instruídos a
 QUEBRAR as certificações — reconstruíram provas de monotonia, plantaram ~300 alvos
 sintéticos, reimplementaram o fecho sem sympy e re-executaram os experimentos:
 
@@ -196,3 +196,159 @@ Com isso, os rótulos das seções 1.2–1.4 valem com a passada adversarial con
   Remark 3.1 — "cadeias") para fechar ω = 6 e ω = 7 automaticamente; depois o método
   de Thackeray (Cor. 6/7 + primos especiais) rumo a ω ≥ 11 (Alvo 2).
 - Colheita de corolários (Alvo 3) em paralelo quando barato.
+
+---
+
+## Bloco 2 — Cadeias de divisibilidade: ω(N) ≥ 7 (aprovado pelo usuário)
+
+### 2.1 Ferramentas novas (`core/cadeias.py`)
+
+Base matemática rotulada no cabeçalho do módulo. Peças, todas exatas e testadas
+(`tests/test_cadeias.py`, 8 testes):
+
+- **Fórmula de valuação** (Lema 2.1 de arXiv:2404.00624 = Nielsen/Voight, via LTE):
+  v_q(σ(p^a)) por ordens multiplicativas, sem fatorar nada; testada exaustivamente
+  contra a valuação direta (p, q ≤ 37, a ≤ 20).
+- **f_p^q** (Teo. 1.3 de 2404.00624): reproduz as 12 amostras da Tabela 4 do paper
+  registradas na nota de leitura (f_31^5 = 3, f_11^5 = 5, …, f_35671^5 = 29).
+- **Fecho por ordens** (`expoentes_validos_ordens`): substitui o fecho ciclotômico do
+  Bloco 1 — os divisores d > 1 de a+1 são ordens ord_r(p) de primos r ∈ S (Zsygmondy),
+  e o teste de fecho é por RECONSTRUÇÃO: σ(p^a) == ∏ q^{v_q(σ(p^a))} (fórmula de
+  valuação), sem fatoração. Equivalência com a implementação ciclotômica do Bloco 1
+  verificada caso a caso (dois métodos independentes).
+- **Orçamentos da equação-mestra**: ∏σ(pᵢ^{aᵢ}) = 9·5^{a₁−1}·∏pᵢ^{aᵢ} dá, exatamente:
+  Σ_{p≡1(3)} v₃(aᵢ+1) = 2 e Σ_{q≡1(5)} v₅(a_q+1) = a₁ − 1 (Fato 2: só ordem 1
+  contribui módulo 3 e 5, pois as demais ordens são pares).
+
+### 2.2 O certificador de ω = 6 (`core/omega6.py`)
+
+Estágio A: enumeração de prefixos C5 (DFS de índice; terminação porque nos níveis
+1–4 o limite do laço é ∏ p/(p−1) de ≤ 4 primos ≤ 1001/576 < 9/5). Estágio B:
+
+- **Ramo (i)** (∏sup(C5) < 9/5): p₆ limitado pelo índice; cada conjunto completo cai
+  na fase de expoentes (fecho por ordens + orçamentos + igualdade exata).
+- **Ramo (ii)** (∏sup(C5) ≥ 9/5; p₆ não limitado por índice): **pinagem pela
+  alimentação do 5**: a₁ ≥ 2 ⟹ v₅(σ(N)) = a₁ − 1 ≥ 1 ⟹ o 5 tem alimentador, e só
+  bases ≡ 1 (mod 5) alimentam. Caso um q ∈ C5 alimenta: 5 | a_q+1 e 5 ∉ D_q ⟹
+  ord_P(q) = 5 ⟹ P | Φ₅(q) — P pinado nos fatores novos (finitos). Caso só P
+  alimenta: P ≡ 1 (mod 10), v₅(a_P+1) limitado pelo conjunto E finito (divisores de
+  a_P+1 dividem q−1 para q ∈ C5∪{3}) ⟹ a₁ percorre conjunto finito e σ(5^{a₁})
+  pina P pelo resto do strip por C5∪{3}. Todo P pinado > p₅ vira conjunto completo
+  (mesma fase exaustiva do ramo i). Lacunas de cobertura detectáveis levantam
+  `NaoCertificavel` (falha honesta, sem certificado).
+
+No espaço real há **exatamente um** prefixo no ramo (ii): {5,7,11,13,23} — o mesmo
+que causou `RamoNaoLimitado` no Bloco 1. A pinagem mecânica dá P ∈ {3221, 31}, e os
+dois conjuntos completos morrem no fecho. É a automação exata do estilo de argumento
+das "cadeias" de 2404.00624.
+
+**Derivação conferida à mão** (independente do código, aritmética inteira):
+- *Caso A*: o único q ∈ C5 com q ≡ 1 (mod 5) é 11; e 5 ∉ D₁₁ (nenhum r ∈ S∪{3} tem
+  ord_r(11) = 5, pois isso exigiria 5 | r−1). Logo ord_P(11) = 5 e
+  P | Φ₅(11) = σ(11⁴) = 16105 = 5 · **3221**, com 3221 primo (divisão por tentativa
+  até 56). Pin: 3221.
+- *Caso B*: divisores ímpares admissíveis de a_P+1 (dividem q−1 para q ∈ C5∪{3}) =
+  {3, 5, 11} ⟹ E = {3,5,11} ⟹ v₅(a_P+1) ≤ 1 ⟹ a₁ = 2 ⟹ σ(5²) = **31**, que não
+  está em C5∪{3}. Pin: 31.
+
+> **Cross-validação com a literatura:** a Tabela 4 de arXiv:2404.00624 (construída à
+> mão pelos autores) registra **f_3221^11 = 5** — exatamente o pin que o procedimento
+> mecânico deste bloco deriva sozinho, sem consultar a tabela. O certificador
+> redescobre a cadeia que os autores exibiram manualmente.
+
+**Nota de projeto (honestidade):** a primeira versão do ramo (ii) usava "escadas" de
+expoentes com kills de janela; o desenho tinha um caso de *straddle* real (no eixo
+do 7 em {5,7,11,13,23}, ∏sup fica a 1,5·10⁻⁵ de 9/5 e nenhum kill dispara) e foi
+substituído pela pinagem — registrado em FRACASSOS.md.
+
+### 2.3 Bugs de solidez pegos pelos testes de alvo plantado
+
+Dois bugs de borda de igualdade — ambos na direção CATASTRÓFICA (certificariam em
+falso a ausência de um amigo) — foram pegos pelos testes de completude com alvo
+plantado antes de qualquer execução real, e corrigidos:
+
+1. Admissão de p₆ no ramo (i) usava `<` onde igualdade exata (assinatura toda-mínima
+   com I == alvo) é candidato vivo — corrigido para `<=`.
+2. Na folha da fase de expoentes, a PODA-MAX degenerava em `prod_I ≤ ALVO` (produto
+   vazio de sups) e matava a igualdade exata — folha movida para antes das podas.
+
+Os testes plantados (assinaturas de 6 primos com expoentes 2 e 4, inclusive no 5)
+agora passam: o certificador ACHA cada assinatura plantada exatamente.
+
+### 2.4 Resultado
+
+`python experiments/elimina_omega6.py` (código deste commit):
+
+```
+prefixos C5: 19 (ramo i: 16, ramo ii: 1)     [2 mortos por poda-min antes do ramo]
+conjuntos completos: 2745; assinaturas testadas na igualdade: 0
+pins de P testados no ramo ii: [31, 3221]
+tempo: 0.1s
+```
+
+Todos os 2 745 conjuntos completos (incluindo a cadeia longa {5,7,11,13,29,p₆} com
+p₆ até 20 731 (2 312 conjuntos), análoga à "cadeia 13" da literatura) morrem no fecho de ordens —
+algum primo fica sem expoente válido — sem que NENHUMA igualdade precise ser
+testada. O único prefixo do ramo (ii) é {5,7,11,13,23} (o mesmo `RamoNaoLimitado`
+do Bloco 1), fechado por pinagem com P ∈ {31, 3221}.
+
+> **Resultado H: todo amigo de 10 tem ω(N) ≥ 7.**
+> `[PROVADO-CONDICIONAL: Teoremas A–D e Lemas/Fato 0 da Fase 0 + Zsygmondy e
+> fórmula de valuação de Nielsen/Voight (clássicos; fórmula re-testada
+> exaustivamente contra valuação direta) + correção de core/omega6.py e
+> core/cadeias.py (passada adversarial em §2.5) + correção de
+> sympy.n_order/factorint/nextprime nas chamadas consumidas]`
+> Reprodução independente e mecânica do Teorema 1.2 de arXiv:2404.00624
+> (prova manual de 19 cadeias) — em 0,1 s.
+
+### 2.5 Passada adversarial do Bloco 2
+
+Cinco revisores independentes (workflow `fase1-adversarial-bloco2`), instruídos a
+QUEBRAR a certificação ω = 6. Três concluíram nesta rodada (dois caíram por limite de
+sessão e foram relançados):
+
+| Alvo | Veredicto | Síntese |
+|---|---|---|
+| Pinagem do ramo (ii) | **SÓLIDA** | replay instrumentado: **todas** as 18 102 chamadas de `v_q_sigma`, 3 017 de `sigma_fecha_em`, 35 222 de `ordem_mod`, 2 924 de `nextprime` e 2 747 de `factorint` consumidas pelo certificado re-verificadas contra implementações próprias — **0 erros**; re-enumeração independente dos prefixos (17 vivos; os 19 do código são superconjunto exato, com 2 mortos por poda-min válida); cobertura dos conjuntos completos: 2 743 esperados vs 2 743 processados, faltando 0 / sobrando 0; morte dos 2 745 re-verificada com código 100% próprio (0 vivos); pinagem inteira reimplementada e varrida sobre 1 001 prefixos sintéticos — 0 divergências |
+| Cobertura do Estágio A + ramo (i) | LACUNA_MENOR | 441 alvos plantados próprios, **todos achados exatamente 1×**; campanha de **mutação dirigida** com 12 mutantes: os 6 na direção perigosa foram todos detectados (perdendo de 26 a 136 dos 136 alvos), os 6 conservadores não perdem nada — o arnês tem dentes. Fecho re-derivado do zero (sem D, sem fórmula de valuação, sem sympy): 0 sobreviventes. **Um defeito sério** (corrigido, abaixo) |
+| Dependências e execução real | LACUNA_MENOR | pins conferidos dígito a dígito; fecho reimplementado de forma *estritamente mais permissiva* → 0 sobreviventes em 2 745; distribuição do matador: o primo 5 mata 2 669 conjuntos, o 7 mata 74, o 19 e o 13 um cada. **Rótulo desonesto** (corrigido, abaixo) |
+
+**Correções aplicadas neste bloco em resposta:**
+
+1. **[SÉRIO] Faltava o raise de terminação em `_prefixos_c5`.** O laço de candidatos
+   só termina se ∏ p/(p−1) < 9/5 **estritamente**; se um nó tivesse ∏sup ≥ 9/5 o laço
+   rodaria **para sempre, sem exceção e sem diagnóstico** — falha por travamento, não
+   pela recusa honesta que o módulo promete. Não afeta o certificado atual (o máximo
+   de ∏sup em qualquer nó de nível ≤ 4 é 1001/576 < 9/5, verificado), mas era **mina
+   para o Bloco 3**: no nível 5 o máximo já é 17017/9216 ≥ 9/5, ou seja, reaproveitar
+   este DFS para ω = 7 travaria silenciosamente **no alvo real**. Corrigido com raise
+   `NaoCertificavel` + teste `test_prefixos_c5_recusa_em_vez_de_travar` (que, sem a
+   correção, não terminaria).
+2. **Rótulo do experimento declarava dependências erradas**: citava `isprime` e
+   `integer_nthroot` (não usados em lugar nenhum) e **omitia `factorint`**, que é
+   load-bearing — é ele que produz os dois pins que fecham o ramo (ii), o único ramo
+   de espaço infinito. Rótulo corrigido.
+3. **As duas guardas de honestidade não tinham teste algum** (mutação: removê-las
+   sobrevivia à suíte inteira e o experimento seguia imprimindo CERTIFICADO).
+   Adicionados `test_guarda_caso_a_pin_indisponivel` (C5 = {5,7,11,13,31}, onde
+   ord₁₁(31) = 5) e `test_guarda_caso_b_sem_pin` (C5 = {5,7,13,17,31}, onde
+   σ(5²) = 31 ∈ C5).
+4. **Afirmação factualmente errada na minha primeira redação**: eu escrevera que os
+   dois conjuntos do ramo (ii) morrem porque "13 fica sem ordem ímpar" — falso. O 13
+   **tem** ordem ímpar (ord₂₃(13) = 11) e m = 11 é candidato legítimo, morto só na
+   reconstrução. **Quem mata os dois conjuntos é o primo 7**; e o 5 ainda tem expoente
+   válido em {5,7,11,13,23,31}. Corrigido no texto e fixado em
+   `test_quem_mata_os_conjuntos_do_ramo_ii`.
+5. Contadores honestos: `prefixos_mortos_min` (a saída antes não fechava:
+   16 + 1 ≠ 19) e `assinaturas_ramo_i` → `assinaturas_testadas` (o contador serve os
+   dois ramos e conta folhas alcançadas, não testes de igualdade executados).
+6. Fragmentos de docstring truncados em `omega6.py` e o número exato do maior p₆
+   ({5,7,11,13,29}: p₆ ≤ **20 731**, 2 312 conjuntos) corrigidos.
+
+**Limitação registrada (não corrigida):** o ramo (ii) é estruturalmente **intestável
+por alvo plantado** — `_ramo_ii_pinagem` levanta `NaoCertificavel` para qualquer alvo
+≠ 9/5, então o arnês que pegou os dois bugs de borda anteriores é cego ali. A
+completude do ramo repousa sobre a derivação manual (§2.2), a re-implementação
+independente feita pela revisão (1 001 prefixos, 0 divergências) e os testes de saída
+congelada. A cláusula `P > p₅` também é código morto na execução real (ambos os pins
+são > 23) — **não presumir que foi validada por uso** num futuro ω = 7.
