@@ -73,7 +73,7 @@ Tudo aritmética elementar com as propriedades 1–6; nenhuma computação além
 - As duas desigualdades finais do passo k = 4 são **apertadíssimas**: 4147/2304 ≈ 1,799913 e 24871/13824 ≈ 1,799117, contra 9/5 = 1,8. O método está no limite da sua força em k = 4 — estender a k = 5 por pura desigualdade global é inviável; é preciso poda ramo a ramo (consistente com a observação de finitude do próprio Ward e com o método de arXiv:2310.15900).
 - I(5²7²11²13²23²) = 485364861/270438025 ≈ 1,7947 < 9/5: o caso p₄ = 23 realmente NÃO sai por desigualdade, o que explica o desvio pelo argumento de divisibilidade σ(5²) = 31 | 9n. Esse padrão (poda aritmética quando a poda analítica falha) é o ingrediente-chave reutilizável.
 
-## 4. Fidelidade à tabela do CLAUDE.md
+## 4. Fidelidade à tabela do panorama (docs/METHODOLOGY.md)
 
 Resumo da tabela em avaliação: "N é ímpar, quadrado perfeito, menor primo divisor = 5 (logo 2,3 ∤ N e 25 | N)" + "existe primo ≡ 1 (mod 3) dividindo N com expoente ≡ 2 (mod 6); se for único, expoente ≡ 8 (mod 18)" + "ω(N) ≥ 6 é mencionado como resultado de Ward na literatura".
 

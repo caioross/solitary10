@@ -1,4 +1,31 @@
-venv/
+# Python
 __pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environments
+venv/
+.venv/
+env/
+
+# Tooling caches
 .pytest_cache/
-*.pyc
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local scratch (search logs, partial sweeps, downloaded PDFs)
+scratch/
+*.log
+literatura/pdf/

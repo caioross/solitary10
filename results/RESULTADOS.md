@@ -1,4 +1,4 @@
-# RESULTADOS — enunciados com rótulo (regras de rigor do CLAUDE.md)
+# RESULTADOS — enunciados com rótulo (regras de rigor: `docs/METHODOLOGY.md`)
 
 Última atualização: 2026-08-20 (Fase 1, Bloco 1). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
