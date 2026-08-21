@@ -42,13 +42,20 @@ ponto onde a literatura precisou de cadeias de divisibilidade (alvo do Bloco 2).
 | Nenhum amigo de 10 até 10¹² | `[PROVADO (A–C) + VERIFICADO-NUMERICAMENTE: N = m², m ímpar, 5\|m, m ≤ 10⁶ — experiments/busca_estrutural.py; incondicional após a Fase 0]` |
 | Única solução de 5σ(n) = 9n em [1, 10⁷] é n = 10 | `[VERIFICADO-NUMERICAMENTE: revisor adversarial, crivo exato independente]` |
 
-## Correções à literatura (divergências documentadas — FASE_0.md §10)
+## Correções à literatura (catálogo completo: `results/ERRATA.md`)
+
+Re-verificadas em 2026-08-21 numa segunda passada independente, sobre o texto verbatim
+do arXiv, com certificado em `experiments/verifica_erratas.py` e `tests/test_erratas.py`
+(28 testes). Material de publicação: `publicacao/`.
 
 | Achado | Rótulo |
 |---|---|
-| arXiv:2404.00624 v5, Lema 2.3: falso como enunciado (caso de igualdade na partição toda de 1's); Lema 3.6/Teo. 1.10 intactos | `[VERIFICADO: contraexemplo exato + correção provada]` |
-| arXiv:2404.00624 v5, Remark 3.7 eq. (7): derivação exibida dá Ω(m) ≥ ω(N) + 2a − 2, não +2a−1; Cor. 1.11 como provado sustenta só N < 5·6^((2^{K−2a+2}−1)²) | `[VERIFICADO: álgebra re-derivada + texto v5 conferido]` |
-| arXiv:2412.02701 v4, Teo. 1.2: efetivo apenas para 2 ≤ r ≤ 5 (X₆ = 82944/85085 < 1); título/abstract prometem todos os primos | `[VERIFICADO: aritmética exata]` |
+| arXiv:2404.00624 v5 Lema 2.3 = arXiv:2409.04451 v4 Lema 23: falso como enunciado (igualdade na partição toda de 1's); enunciados do Lema 3.6/24 e do Teo. 1.10 intactos, provas precisam da forma corrigida | `[PROVADO: contraexemplo exato + correção provada]` |
+| arXiv:2404.00624 v5, Remark 3.7 eq. (7): a derivação exibida dá Ω(m) ≥ ω(N) + 2a − 2, não +2a−1; eq. (8) vira Ω(m) ≥ ω(m) + 2a − 1 | `[PROVADO: álgebra re-derivada + 152 testemunhas inteiras]` |
+| O limite do Teo. 1.10 (2ω+6a−4) é o **ótimo exato** da relaxação usada na sua prova — a unidade que falta na eq. (7) não é recuperável por esse argumento | `[PROVADO: minimização exaustiva, 48 pares (a, ω)]` |
+| arXiv:2404.00624 v5, Cor. 1.11: como provado sustenta só N < 5·6^((2^{K−2a+2}−1)²); forma original é repetida em arXiv:2504.08295 §1 | `[PROVADO: consequência direta do item acima]` |
+| arXiv:2412.02701 v4, Teo. 1.2: efetivo apenas para 2 ≤ r ≤ 5 (X₆ = 82944/85085 < 1, F₆ = 17017/9216 > 9/5); título/abstract prometem todos os primos | `[PROVADO: aritmética exata, ambas as leituras da condição]` |
+| arXiv:2404.00624 v5, Caso-12 do Teo. 1.2: fator impresso 381/361 = I(19²) no lugar de I(23²) = 553/529; conclusão do caso mantida | `[PROVADO: recomputação exata]` |
 
 ## Candidatos anotados (SEM prova própria ainda — não usar como hipótese)
 
