@@ -1,6 +1,6 @@
 # RESULTADOS — enunciados com rótulo (regras de rigor: `docs/METHODOLOGY.md`)
 
-Última atualização: 2026-08-21 (Fase 1, Bloco 2). Detalhes: `FASE_0.md`, `FASE_1.md`.
+Última atualização: 2026-09-08 (Fase 1, Bloco 3). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
 ## Notação
 
@@ -45,6 +45,16 @@ arXiv:2404.00624, cuja prova publicada é uma análise manual de 19 cadeias. A p
 automática redescobre sozinha a entrada **f_3221^11 = 5** da Tabela 4 do paper
 (construída à mão pelos autores). Não é resultado novo — é validação cruzada da
 literatura por via independente, e a infraestrutura para atacar ω = 8 no Bloco 3.
+
+## Fase 1, Bloco 3 — certificador recursivo (FASE_1.md, Bloco 3)
+
+Nenhum enunciado novo. O certificador recursivo `core/omega_k.py` (partição completa
+de casos pelos orçamentos v₅ e v₃, com a cota universal a₁ ≤ 1 + (c₅+s)(c₅+s−1) e
+viabilidade injetiva de testemunhas) **re-certifica ω(N) ≥ 7 de forma independente
+e curta** (27 conjuntos completos, 57 nós) — ainda sem passada adversarial própria,
+portanto NÃO load-bearing para o rótulo de H, que segue apoiado no Bloco 2.
+**ω = 7 permanece aberto** para o método; fronteira caracterizada em FASE_1.md §3.5
+e FRACASSOS.md (estado {5,7,11,13,31,331}+P, a_P = 14 forçado).
 
 ## Verificações numéricas
 

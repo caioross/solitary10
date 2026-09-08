@@ -14,6 +14,26 @@ Formato de entrada:
 
 ---
 
+## [2026-09-08] Fase 1, Bloco 3 — ω = 7 pela partição por orçamentos (parede honesta)
+
+- **O que se tentou:** certificar ω(N) ≥ 8 com o certificador recursivo
+  (`core/omega_k.py`): partição completa de casos pelos orçamentos exatos
+  v₅(σ(N)) = a₁−1 e v₃(σ(N)) = 2 (cota universal a₁ ≤ 1 + (c₅+s)(c₅+s−1); pins pelos
+  fatores novos de Φ_{ℓʲ}(q); produto de casos; viabilidade injetiva das testemunhas
+  do último desconhecido), com o índice como fallback.
+- **Por que falhou (razão precisa):** o estado {5,7,11,13,31,331}+P (a₁ = 2, 331 de
+  Φ₃(31)) fica aberto: P carrega o 5 e um dos 3's (15 | a_P+1, e 331 ≡ 1 mod 15 é
+  testemunha legítima), a_P = 14 é forçado, e ∏sup = 1,8012 ≥ 9/5 tira o índice de
+  jogo. Fechar exige v_P(N) = 14 = Σ_q v_P(q^{ord_P(q)} − 1) sobre ≤ 6 alimentadores —
+  contabilidade de valuação do desconhecido (Thackeray, Cor. 6 / Prop. 9), que os
+  dois orçamentos não capturam. Também caiu no caminho a primeira arquitetura
+  (índice primeiro): explosão combinatória em {5,7,11,13,29} com 2 slots (> 590 s).
+- **O que aproveitar:** tudo o que funcionou ficou no repo e é reutilizável — a cota
+  universal para a₁, a partição pelo 3, o pin pelos fatores não-primitivos de
+  Φ_{ℓʲ}(q), e o emparelhamento injetivo (que é o argumento do fecho do Bloco 1
+  aplicado ao primo desconhecido). k ≤ 6 passou de 2 745 conjuntos para 27. O
+  Bloco 4 deve acrescentar o orçamento de v_P.
+
 ## [2026-08-21] Fase 1, Bloco 2 — escadas de expoentes com kills de janela (abandonada)
 
 - **O que se tentou:** para o ramo não limitado por índice do certificador ω = 6

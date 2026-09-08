@@ -395,3 +395,126 @@ completude do ramo repousa sobre a derivação manual (§2.2), a re-implementaç
 independente feita pela revisão (1 001 prefixos, 0 divergências) e os testes de saída
 congelada. A cláusula `P > p₅` também é código morto na execução real (ambos os pins
 são > 23) — **não presumir que foi validada por uso** num futuro ω = 7.
+
+---
+
+## Bloco 3 — Certificador recursivo e cota universal para a₁ (aprovado: "continue")
+
+### 3.1 A ideia: um certificador para qualquer ω, com honestidade em cada nó
+
+`core/omega_k.py` substitui o desenho "Estágio A + dois ramos" do Bloco 2 por uma
+recursão uniforme sobre estados (C, s, lo): C = primos já conhecidos (contém 5),
+s = quantos primos ainda são desconhecidos, lo = cota inferior dos desconhecidos
+(invariante: todo primo de S que seja ≤ lo está em C). Em cada nó:
+
+- **morto** se s ≥ 1 e ∏_{C} I(p²) ≥ 9/5 (os s fatores restantes são > 1);
+- **s = 0**: conjunto completo → a mesma fase de expoentes do Bloco 2
+  (`omega6._conjunto_completo`: fecho por ordens + orçamentos v₃/v₅ + igualdade);
+- **ramo (i)** se ∏_{C} p/(p−1) < 9/5: o menor desconhecido U é limitado pelo índice
+  (majoração não-crescente em U com limite ∏sup(C) < 9/5 — o laço termina, sem raise
+  necessário: a condição de entrada É a condição de terminação); recorre com lo = U;
+- **ramo (ii)** senão: pinagem (abaixo) e recursão com s reduzido.
+
+A armadilha mapeada no Bloco 2 (o DFS de prefixos travaria no nível 5, onde
+∏sup{5,7,11,13,17} = 17017/9216 ≥ 9/5) desaparece por construção: um nó com
+∏sup ≥ 9/5 nunca entra no laço de índice — vai para a pinagem.
+
+### 3.2 A peça nova: cota universal para a₁ = v₅(N)
+
+v₅(σ(N)) = a₁ − 1 = Σ_{alimentadores U} v₅(a_U + 1), e só bases ≡ 1 (mod 5) alimentam
+(Fato 2). Para um alimentador U com k = v₅(a_U+1): para cada j = 1..k, Φ_{5^j}(U)
+divide σ(N) e tem primo primitivo r_j com ord_{r_j}(U) = 5^j (Zsygmondy, sem exceções
+para U ≥ 5 e 5^j ímpar ≥ 5), logo r_j ≡ 1 (mod 5^j), r_j ∉ {3, U}, e os r_j são
+**distintos** (ordens distintas). Portanto k ≤ #{r ∈ S∖{U} : r ≡ 1 (mod 5)} ≤
+c₅ + s − 1, com c₅ = #{q ∈ C : q ≡ 1 (mod 5)}. Com no máximo c₅ + s alimentadores:
+
+> **a₁ ≤ 1 + (c₅ + s)·(c₅ + s − 1)** — finita para qualquer número de slots.
+
+Enumera-se a₁ par nessa faixa; σ(5^{a₁}) tem de fatorar em S ∪ {3}, então os fatores
+primos do resto do strip por C ∪ {3} são desconhecidos: mais que s, ou algum ≤ lo
+(estaria em C pelo invariante) ⟹ caso morto; senão **todos ficam pinados**. Se o resto
+é 1, o 5 ainda precisa de alimentador: para cada q ∈ C com q ≡ 1 (mod 5), o caso "q
+alimenta" pina via Φ₅(q) (se 5 ∉ D_q(C)); o caso "só desconhecidos alimentam" é
+fechado quando é impossível (s = 1 e C sem os primos ≡ 1 (mod 5^j) exigidos) e,
+caso contrário, levanta `NaoCertificavel`. Nenhuma lacuna é silenciosa.
+
+### 3.3 Cross-check com os Blocos 1–2
+
+Para k ≤ 6 o recursivo reproduz as certificações anteriores, com uma diferença
+**explicável e mais apertada**: para k = 6 testa 2 744 conjuntos completos (o Bloco 2
+testou 2 745) e pina só {31}. A cota universal dá, em {5,7,11,13,23} com s = 1,
+a₁ ≤ 1 + 2·1 = 3 ⟹ **a₁ = 2 forçado** ⟹ σ(25) = 31 ocupa o único slot; o caso
+"11 alimenta ⟹ 3221" do Bloco 2 exigiria um segundo slot e é subsumido. Ambas as
+coberturas são completas; o Bloco 2 testou um conjunto redundante. Para k ≤ 5 o índice
+mata na folha o que o Bloco 1 matava pelo fecho (mesmo veredito). Testes em
+`tests/test_omega_k.py` (consistência k ≤ 6, cota de a₁ com dois slots, guarda de alvo,
+plantios de 7 primos no regime do ramo (i)).
+
+### 3.4 O que mais entrou no bloco (três iterações honestas)
+
+A primeira versão do certificador (índice primeiro, pinagem só onde o índice falha)
+**explodia em k = 7**: no prefixo {5,7,11,13,29} com 2 slots, U vai a ~41 500 pelo
+índice e, para cada U > 20 744, p₇ sobe a centenas de milhares (∏sup a 10⁻⁶ de 9/5)
+— milhões de conjuntos de 7 primos, todos mortos no fecho, tarde demais (> 590 s).
+A resposta foi matemática: a pinagem é uma partição completa **em qualquer nó**, e
+"a₁ = 2 ⟹ 31 ∈ S, 31 ≤ lo" mata toda a cadeia instantaneamente. Com **partição
+primeiro** (índice como fallback), k = 6 cai de 2 745 conjuntos para 27.
+
+As três iterações seguintes, cada uma disparada por um estado residual concreto de
+k = 7:
+
+1. **a₁ comprometido**: um ramo vindo de a₁ = 4 re-enumerava a₁ = 2 mais fundo —
+   sub-caso impossível no ramo. O a₁ escolhido numa partição é propagado.
+2. **Orçamento do 3** (v₃(σ(N)) = 2 exato; residual {5,7,11,13,31,71}+P): mesma
+   estrutura de Zsygmondy, total fixo; e a correção de uma fraqueza minha —
+   quando a testemunha primitiva de Φ_{ℓʲ}(q) é conhecida eu não pinava nada, mas
+   os **demais** fatores novos de Φ_{ℓʲ}(q) continuam obrigados a estar em S
+   (Φ₅(31) = 5·11·17351 pina 17351 mesmo com 11 conhecido).
+3. **Produto de casos + viabilidade injetiva** (residual {5,7,11,13,31,181}+P):
+   com um único desconhecido, todo divisor d > 1 de a_P+1 é a ordem de um primo
+   primitivo r_d ∈ C com d | r_d − 1, e divisores distintos têm testemunhas
+   **distintas** — um emparelhamento. 45 | a_P+1 exigiria testemunhas para 9 e 45,
+   e só 181 serve às duas. O caso morre.
+
+### 3.5 Resultado para ω = 7: NÃO certificado — fronteira caracterizada
+
+`python experiments/elimina_omega_k.py --k-max 7` (saída verbatim, linhas de pins
+omitidas):
+
+```
+omega = 1: nos=1 mortos_min=0 ramo_i=0 particoes=0 conjuntos_completos=1 folhas=0 amigos=0 tempo=0.0s
+omega = 2: nos=1 mortos_min=0 ramo_i=0 particoes=1 conjuntos_completos=0 folhas=0 amigos=0 tempo=0.0s
+omega = 3: nos=3 mortos_min=0 ramo_i=0 particoes=2 conjuntos_completos=1 folhas=0 amigos=0 tempo=0.0s
+omega = 4: nos=4 mortos_min=0 ramo_i=3 particoes=4 conjuntos_completos=0 folhas=0 amigos=0 tempo=0.0s
+omega = 5: nos=7 mortos_min=0 ramo_i=6 particoes=7 conjuntos_completos=0 folhas=0 amigos=0 tempo=0.5s
+omega = 6: nos=57 mortos_min=0 ramo_i=25 particoes=30 conjuntos_completos=27 folhas=0 amigos=0 tempo=1.6s
+omega = 7: NAO CERTIFICADO apos 0.1s
+   estado residual: C=[5, 7, 11, 13, 31, 331], s=1: casos abertos ['a1=2:k5=1,k3=1']
+```
+
+Caracterização exata do residual (aritmética registrada em `tests/test_omega_k.py`):
+- C = {5,7,11,13,31,331}, um desconhecido P > 331; a₁ = 2 (ramo); 331 veio de
+  Φ₃(31) = 3·331 ("31 alimenta o 3").
+- Único caso aberto: P alimenta o 5 (k₅ = 1) **e** carrega um dos dois 3's (k₃ = 1);
+  o outro 3 vem do 31. Logo 15 | a_P + 1, e 331 ≡ 1 (mod 15) é testemunha legítima.
+- Os m = a_P + 1 viáveis (injeção de testemunhas em C) são **{3, 5, 11, 15}** ⟹
+  **a_P = 14 forçado**.
+- **13 não tem alimentador possível em C** (nenhum ord₁₃(q) ímpar) ⟹ só P alimenta
+  o 13; ord₁₃(P) = 1 exigiria 13 | 15 ⟹ ord₁₃(P) = 3 ⟹ P ≡ 3 ou 9 (mod 13).
+- ∏sup(C) = 1,8012 ≥ 9/5: o índice não limita P. ∏I(q²) = 1,7794.
+
+O que falta para fechar: v_P(N) = a_P = 14 tem de ser inteiramente fornecido pelos
+σ(q^{a_q}), q ∈ C (P ∤ a_q+1, pois um divisor P de a_q+1 exigiria testemunha ≡ 1
+(mod P) em S, impossível) — ou seja, Σ_{q∈C} v_P(q^{ord_P(q)} − 1) ≥ 14 com apenas
+6 termos: exige **v_P(q^{ord_P(q)} − 1) ≥ 3 para algum q** ("par de Wieferich de
+ordem alta" com P > 331). É exatamente o terreno do Corolário 6 / Proposição 9 de
+Thackeray (arXiv:2310.15900): contabilidade de v_r com cotas verificadas por
+computador para primos especiais. **Bloco 4 candidato:** orçamento de v_P para o
+desconhecido, com a cota (k−1)² + c de Thackeray re-derivada.
+
+**Rótulos:** nenhum enunciado novo. ω(N) ≥ 7 (Resultado H) fica **duplamente
+certificado** — pelo certificador do Bloco 2 (2 745 conjuntos; passada adversarial
+§2.5) e, de forma independente e muito mais curta, pelo recursivo deste bloco
+(27 conjuntos; ainda **sem** passada adversarial própria — não é load-bearing
+enquanto não passar por ela). ω = 7 permanece aberto para este método.
+
