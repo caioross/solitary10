@@ -865,8 +865,38 @@ de Thackeray (Corolário 6 com c limitado pela Proposição 9: cálculo finito d
 Wieferich generalizado) — ou uma contabilidade global de v_r que o projeto ainda não
 tem. Registrado em FRACASSOS.md como beco atual, com o que aproveitar.
 
-Ao fechar este bloco, k = 9 roda em background com limite de 12 h (log em
-scratchpad `k9f.log`); se terminar, entra como adendo.
+**Adendo — o run de 12 h.** k = 9 rodou 12 h (limite) e **não terminou**:
+196 048 873 nós, 20 857 084 conjuntos completos, 15 911 216 mortos pela poda barata,
+4 172 676 caudas, 1 518 505 conjuntos com um primo grande; 0 amigos no que foi
+explorado — o que **não é certificado de nada**. Ao parar estava na família
+C = {5,7,11,13,31,97} + p₇ (a₁ = 2, ∏sup = 9/5 − 3,4·10⁻⁵): p₇ vai pelo índice de
+52 361 a ~157 000 (9 084 primos) e cada filho com s = 2 enumera U₁ até
+2/δ(p₇), com δ(p₇) = (9/5)/(∏sup·sup(p₇)) − 1 ≈ 1,9·10⁻⁵ − 1/p₇ — 5,4 milhões de
+primos em p₇ = 52 361 (a quase-cancelação), dezenas de milhares nos vizinhos. Em 12 h
+avançou de p₇ = 52 361 a 54 251; a família inteira pediria dias, e não é a única.
+
+Analisei ao vivo a ideia natural de apertar o intervalo pelo lado de baixo: com
+x = ∏ I(U_i^{a_i}) > 1 + 1/U₁ e x ≤ (9/5)/prod_min, vale U₁ > B_low = 1/((9/5)/prod_min − 1),
+e as caudas fazem prod_min → prod_sup. Não basta: B_high supõe os s desconhecidos
+todos ≈ U₁ e B_low supõe os outros s − 1 enormes, logo o intervalo tende a
+[1/(r − 1), s/(r − 1)] com r = (9/5)/prod_sup — largura inerente de fator s. Na
+família acima, com todas as caudas no infinito: s = 3 dá [52 333, 157 001]
+(9 084 primos); o filho p₇ = 52 361 (s = 2) dá [1,03·10⁸, 2,05·10⁸] (5,4 milhões).
+Cotas de índice, sozinhas, não fecham nós quase justos.
+
+O que fecha, pela leitura da nota de arXiv:2310.15900 (§2, Cor. 6 e Prop. 9): uma
+**cota finita para o expoente de um primo conhecido r** —
+a_r ≤ (k − 1)² + c − v_r(I(N)), onde (k−1)² conta os níveis v_r(a_q + 1) (cada nível
+exige testemunha ≡ 1 mod rʲ distinta, como na nossa cota universal para a₁, que é o
+caso r = 5 com c = 0) e c soma os "excessos de Wieferich" v_r(q^{ord_r(q)} − 1) − 1
+dos q ∈ S com ord_r(q) | a_q + 1 — computáveis para q ∈ C e limitados para os
+desconhecidos ≤ L pela Proposição 9 (Lema 8: as soluções de x^{r−1} ≡ 1 mod r^a são os
+lifts de Hensel y^{r^{a−1}} mod r^a, y = 1..r−1; se o menor deles > L, nenhum q ≤ L tem
+nível ≥ a). Com a_r finito, a cauda de r vira ramos exatos, e cada σ(r^{a_r}) fecha em
+S ∪ {3} com pins — é exatamente o que Thackeray usou com (r, log_r L, δ) = (31, 14, 1)
+e (19531, 6, 1) nos dois últimos níveis. **Candidato a Bloco 6:** re-derivar o
+Corolário 6 (prova própria + adversarial), implementar a Proposição 9 e aplicar a
+cota aos primos conhecidos dos nós quase justos.
 
 ### 5.5 Rótulos
 

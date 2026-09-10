@@ -30,6 +30,12 @@ Formato de entrada:
   limitado pela Proposição 9 — Wieferich generalizado por cálculo finito), ou uma
   contabilidade global de v_r. Alternativa bruta: deixar o k = 9 rodar por horas
   (a enumeração é finita e honesta).
+- **Desfecho (mesmo dia):** a força bruta de 12 h não bastou (196 M nós, ainda na
+  mesma família; estimativa: dias). A cota inferior B_low = 1/((9/5)/prod_min − 1)
+  com caudas também não basta: o intervalo do próximo primo tende a
+  [1/(r−1), s/(r−1)] — largura inerente de fator s (FASE_1.md §5.4, adendo). O
+  que falta é a cota FINITA de expoente para primos conhecidos (Cor. 6 + Prop. 9 de
+  Thackeray), que transforma caudas em ramos exatos com pins — Bloco 6 candidato.
 
 ## [2026-09-08] Fase 1, Bloco 3 — ω = 7 pela partição por orçamentos (parede honesta)
 
