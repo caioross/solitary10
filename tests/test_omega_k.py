@@ -2,7 +2,7 @@
 from fractions import Fraction
 
 import pytest
-from sympy import n_order
+from sympy import isprime, n_order
 
 import core.omega6 as omega6
 import core.omega_k as omega_k
@@ -35,13 +35,13 @@ def test_k6_particao_primeiro_reduz_a_arvore_e_mantem_o_veredito():
     assert st.amigos == [] and s6.amigos == []
     # o Bloco 2 (índice primeiro) testou 2745 conjuntos; com a PARTIÇÃO POR
     # ORÇAMENTOS em todo nó, o a1 comprometido entrando EXATO nas cotas de índice
-    # e na cota universal (Bloco 4), todos os 22 conjuntos completos de k = 6
-    # morrem já pela poda barata de índice (prod_min > 9/5 ou prod_sup <= 9/5),
-    # em 51 nós.
+    # e na cota universal (Bloco 4) e o último desconhecido por equação
+    # ciclotômica (Bloco 5), todos os 26 conjuntos completos de k = 6 morrem já
+    # pela poda barata de índice (prod_min > 9/5 ou prod_sup <= 9/5), em 55 nós.
     assert s6.conjuntos_completos == 2745
-    assert st.nos == 51
+    assert st.nos == 55
     assert st.conjuntos_completos == 0
-    assert st.completos_mortos_indice == 22
+    assert st.completos_mortos_indice == 26
     assert st.assinaturas_testadas == 0
     # o primeiro pin é o a1 = 2 forçando 31 na raiz
     assert st.pins[0] == ((5,), "a1=2", (31,))
@@ -57,9 +57,10 @@ def test_k7_certificado_pelo_recursivo():
     st = certifica_omega(7)
     assert st.amigos == []
     assert st.assinaturas_testadas == 0
-    assert st.nos == 549
-    assert st.conjuntos_completos == 153
-    assert st.completos_mortos_indice == 224
+    assert st.nos == 459
+    assert st.conjuntos_completos == 40
+    assert st.completos_mortos_indice == 247
+    assert st.ultimos_resolvidos >= 1              # Bloco 5: s = 1 sem enumerar primos
     assert st.conjuntos_com_primo_grande == 0      # maior primo em C tem 60 bits
     assert st.ramos_expoente == 0                  # caudas só entram em k = 8
 
@@ -73,7 +74,9 @@ def test_residual_do_bloco_3_morre_pelo_a1_exato():
     st = StatsK(k=7)
     omega_k._certifica(C, 1, 331, st, {5: 2}, {})
     assert st.amigos == []
-    assert st.ramo_i >= 1
+    # Bloco 5: o caso aberto (k5 = 1, k3 = 1) é resolvido por Phi_5(P) = 5·11^a·31^b·331^c
+    # (candidatos finitos), não pelo índice
+    assert st.ultimos_resolvidos >= 1 and st.ramo_i == 0
 
 
 # ---------------------------------------------------------------------------
@@ -346,3 +349,89 @@ def test_planted_k7_com_expoente_4_no_ultimo(monkeypatch):
     monkeypatch.setattr(omega6, "ALVO", alvo)
     st = certifica_omega(7)
     assert assin in st.amigos
+
+
+# ---------------------------------------------------------------------------
+# Bloco 5 — último desconhecido por equações ciclotômicas
+# ---------------------------------------------------------------------------
+
+def _bruto_ultimo(C, lo, ell, eps, U_max):
+    """Força bruta independente: primos U em (lo, U_max] fora de C tais que
+    Phi_ell(U) = ell^eps · (produto de primos de C_ell)."""
+    from sympy import primerange
+    C_ell = [q for q in C if (q - 1) % ell == 0]
+    out = []
+    for U in primerange(lo + 1, U_max + 1):
+        if U in C:
+            continue
+        R = (U**ell - 1) // (U - 1)
+        v = 0
+        while R % ell == 0:
+            R //= ell
+            v += 1
+        if v != eps:
+            continue
+        for q in C_ell:
+            while R % q == 0:
+                R //= q
+        if R == 1:
+            out.append(U)
+    return out
+
+
+def test_solucoes_phi_batem_com_forca_bruta():
+    from core.omega_k import _cota_indice_U, _phi_primo, _prod_min_sup, _solucoes_phi
+    casos = [([5, 7, 11, 13, 23], {5: 2}), ([5, 7, 11, 13, 31], {5: 2}),
+             ([5, 7, 13, 19, 31], {5: 2, 7: 2}), ([5, 11, 31, 71], {5: 4})]
+    encontrados = set()
+    for C, fixos in casos:
+        prod_sup = _prod_min_sup(C, fixos, {})[1]
+        cota = _cota_indice_U(prod_sup)          # None em {5,7,11,13,23} (sem cota)
+        U_max = 200_000 if cota is None else min(cota, 200_000)
+        lo = max(C)
+        for ell in (3, 5, 7, 11):
+            C_ell = [q for q in C if (q - 1) % ell == 0]
+            for eps in (0, 1):
+                esperado = _bruto_ultimo(C, lo, ell, eps, U_max)
+                obtido = sorted(_solucoes_phi(ell, eps, C_ell, _phi_primo(ell, U_max), fixos, lo, set(C)))
+                assert obtido == esperado, (C, ell, eps, obtido, esperado)
+                encontrados.update(esperado)
+    assert 67 in encontrados       # não-vacuidade: 67^2 + 67 + 1 = 3·7^2·31 em {5,7,11,13,31}
+
+
+def test_ultimo_desconhecido_resolve_o_no_quase_justo_de_k9():
+    # C = {5,7,11,13,31,97,52361}, a1 = 2: prod_sup = 9/5 - 1,8e-8 e o índice só
+    # limita U por U < 1,03e8 (5,9 milhões de primos). O solver enumera vetores de
+    # expoentes e extrai raízes inteiras — em bem menos de um segundo.
+    import time
+    from core.omega_k import _cota_indice_U, _prod_min_sup, _ultimo_desconhecido
+    C = [5, 7, 11, 13, 31, 97, 52361]
+    prod_sup = _prod_min_sup(C, {5: 2}, {})[1]
+    assert _cota_indice_U(prod_sup) > 10**8
+    t = time.perf_counter()
+    for k5, k3 in [(1, 0), (0, 1), (0, 0), (1, 2)]:
+        cands = _ultimo_desconhecido(C, 52361, {5: 2}, k5, k3, prod_sup)
+        assert cands is not None
+        assert all(isprime(U) and U > 52361 for U in cands)
+    assert time.perf_counter() - t < 5
+    # sem cota (prod_sup >= 9/5, expoentes livres) o solver recusa, honestamente
+    assert _ultimo_desconhecido([5, 7, 11, 13, 31, 89], 89, {5: 2}, 1, 0, Fraction(9, 5)) is None
+    # ... salvo se todos os q em C_ell têm expoente fixo (lado direito finito)
+    assert _ultimo_desconhecido([5, 7, 11, 13, 31, 89], 89, {5: 2, 11: 2, 31: 2}, 1, 0,
+                                Fraction(9, 5)) is not None
+
+
+def test_ultimo_desconhecido_e_completo_contra_forca_bruta():
+    # Completude: em C = {5, 7, 11, 13, 31} com a1 = 2 (cota do índice U < 97),
+    # o caso (k5, k3) = (0, 1) exige Phi_3(U) = 3·(produto de {7, 13, 31}) e a
+    # força bruta acha exatamente U = 67; o caso (0, 0) é a união sobre
+    # L(C) = {3, 5} com eps = 0 (U não alimenta 3 nem 5).
+    from core.omega_k import _cota_indice_U, _prod_min_sup, _ultimo_desconhecido
+    C = [5, 7, 11, 13, 31]
+    prod_sup = _prod_min_sup(C, {5: 2}, {})[1]
+    U_max = _cota_indice_U(prod_sup)
+    assert U_max == 96
+    assert _ultimo_desconhecido(C, 31, {5: 2}, 0, 1, prod_sup) == _bruto_ultimo(C, 31, 3, 1, U_max) == [67]
+    assert _ultimo_desconhecido(C, 31, {5: 2}, 1, 0, prod_sup) == _bruto_ultimo(C, 31, 5, 1, U_max)
+    esperado = sorted(set(_bruto_ultimo(C, 31, 3, 0, U_max)) | set(_bruto_ultimo(C, 31, 5, 0, U_max)))
+    assert _ultimo_desconhecido(C, 31, {5: 2}, 0, 0, prod_sup) == esperado

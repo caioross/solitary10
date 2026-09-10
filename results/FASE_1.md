@@ -762,3 +762,116 @@ Nota: para omega >= 7 o certificado load-bearing e o do Bloco 2 (experiments/eli
   na raiz de k = 9 fica como resto de ≥ 2 primos (sólido, mas sem pins); um
   oráculo de fatorações certificadas por multiplicação (tabelas de Cunningham)
   recuperaria os pins.
+
+---
+
+## Bloco 5 — O último desconhecido por equações ciclotômicas (aprovado: "continue")
+
+Objetivo aprovado (§4.8): substituir a enumeração pelo índice do último desconhecido
+por uma equação polinomial com lado direito finito. Entregue e testado; o efeito em
+k ≤ 8 é grande (k = 8: 210 456 → 90 032 nós), e o k = 9 mudou de parede — a
+enumeração degenerada passou dos nós com s = 1 (resolvidos em 0,00 s) para os nós
+quase justos com **s = 2**, cuja análise fecha este bloco.
+
+### 5.1 O lema e a implementação
+
+Num nó com um único desconhecido U (S = C ∪ {U}), a_U + 1 é ímpar ≥ 3 e tem um fator
+primo ℓ. Então Φ_ℓ(U) | σ(U^{a_U}) | σ(N), e todo fator primo de Φ_ℓ(U) está em
+S ∪ {3}. Um primo q | Φ_ℓ(U) ou tem ord_q(U) = ℓ — logo q ≡ 1 (mod ℓ), q ≠ 3
+(ord₃ ≤ 2), q ≠ U — ou é q = ℓ, não primitivo (U ≡ 1 mod ℓ, e então v_ℓ(Φ_ℓ(U)) = 1
+por LTE), caso em que ℓ ∈ C ou ℓ = 3. Zsygmondy (ℓ ímpar ≥ 3, U ≥ 2: sem exceções)
+dá um primo primitivo r ∈ C, logo ℓ | r − 1: ℓ ∈ L(C) = {primos ímpares que dividem
+algum r − 1, r ∈ C}, conjunto finito. Assim
+
+> **Φ_ℓ(U) = ℓ^ε · ∏_{q ∈ C_ℓ} q^{e_q}**, C_ℓ = {q ∈ C : ℓ | q − 1}, ε ∈ {0, 1}, e_q ≤ a_q.
+
+O lado direito percorre um conjunto **finito** de vetores quando há cota: pelo índice
+(prod_sup(C) < 9/5 ⟹ U < 1 + 1/δ, δ = (9/5)/prod_sup − 1, logo Φ_ℓ(U) ≤ Φ_ℓ(U_max))
+ou porque todos os q ∈ C_ℓ têm expoente fixo. Para cada valor R do lado direito há no
+máximo um U, pois U^{ℓ−1} < Φ_ℓ(U) < (U+1)^{ℓ−1}: **U = ⌊R^{1/(ℓ−1)}⌋**, raiz inteira
+exata (`integer_nthroot`), verificada por Φ_ℓ(U) = R, U primo, U > lo, U ∉ C. Sem
+enumerar primos.
+
+Qual ℓ: com s = 1 os orçamentos são exatos para U (Fato 2): k₅ ≥ 1 ⟹ ℓ = 5 com
+U ≡ 1 (mod 5), ε = 1; senão k₃ ≥ 1 ⟹ ℓ = 3, ε = 1; com (k₅, k₃) = (0, 0), ℓ percorre
+L(C), com ε = 0 forçado para ℓ ∈ {3, 5} (U ≡ 1 mod ℓ alimentaria ℓ) e ε ∈ {0, 1} só se
+ℓ ∈ C. Um ℓ basta para a completude (a união sobre os ℓ possíveis cobre todo U); a
+fase de conjunto completo re-verifica o resto. Sem cota (prod_sup ≥ 9/5 com
+expoente livre em C_ℓ) ou com L(C) incompleto (primo grande em C), o solver devolve
+None e o caso segue para caudas/índice como antes.
+
+Implementação: `_cota_indice_U`, `_L_de`, `_solucoes_phi` (DFS sobre vetores de
+expoentes com poda pelo produto), `_ultimo_desconhecido`; entra em `_particao` como
+passo 3 (antes das caudas) para pares abertos com s = 1; os candidatos viram pins
+(conjuntos completos). Contadores `ultimos_resolvidos` e `candidatos_ultimo`.
+
+### 5.2 Verificação
+
+- `test_solucoes_phi_batem_com_forca_bruta`: força bruta independente (enumerar
+  primos U ≤ U_max e testar o fecho de Φ_ℓ(U) por divisões) contra o solver, em
+  quatro prefixos, ℓ ∈ {3, 5, 7, 11}, ε ∈ {0, 1}; não-vacuidade garantida pelo caso
+  {5,7,11,13,31}, ℓ = 3, ε = 1: **67² + 67 + 1 = 4557 = 3·7²·31**, achado pelos dois.
+- `test_ultimo_desconhecido_e_completo_contra_forca_bruta`: os três modos (k₅ ≥ 1,
+  k₃ ≥ 1, (0,0) = união sobre L(C)) contra a força bruta.
+- `test_ultimo_desconhecido_resolve_o_no_quase_justo_de_k9`: o nó de §4.8
+  ({5,7,11,13,31,97,52361}, a₁ = 2, U < 1,03·10⁸) resolve nos três modos em
+  < 5 s (0,00 s na prática: zero candidatos), e o solver recusa honestamente sem
+  cota.
+- Contagens congeladas atualizadas (k = 6: 55 nós; k = 7: 459 nós, 40 conjuntos
+  completos, `ultimos_resolvidos ≥ 1`); o residual do Bloco 3 agora fecha pelo
+  solver (`ramo_i == 0`).
+
+Junto entraram duas otimizações de constante, sem mudança de semântica: fatores
+pequenos por gcd com o primorial dos primos < 10⁵ (uma divisão longa no lugar de
+9 592 módulos) e Φ_{ℓʲ}(q) por fórmula direta ((q^{ℓʲ} − 1)/(q^{ℓʲ⁻¹} − 1)) em vez de
+`cyclotomic_poly`.
+
+### 5.3 Efeito em k ≤ 8
+
+| k | nós (Bloco 4) | nós (Bloco 5) | conjuntos completos | últimos resolvidos | tempo |
+|---|---|---|---|---|---|
+| 6 | 51 | 55 | 0 | 1 | 0,6 s |
+| 7 | 549 | 459 | 40 (era 153) | 5 | 1,3 s |
+| 8 | 210 456 | 90 032 | 23 931 (era 145 659) | 537 | 36 s |
+
+Mesmo veredito em todos (0 amigos, 0 `NaoCertificavel`); o solver nunca produziu um
+candidato em k ≤ 8 (`candidatos_ultimo = 0`): todo caso aberto com s = 1 morre por
+inexistência de solução.
+
+Saída do script oficial (`python experiments/elimina_omega_k.py --k-max 8`,
+linhas de k = 7 e 8):
+
+```
+omega = 7: nos=459 mortos_min=0 ramo_i=46 particoes=172 ramos_expoente=0 caudas=0 conjuntos_completos=40 completos_mortos_indice=247 com_primo_grande=0 casos_sem_fecho=41 ultimos_resolvidos=5 candidatos_ultimo=0 folhas=0 amigos=0 tempo=0.7s
+omega = 8: nos=90032 mortos_min=193 ramo_i=361 particoes=45254 ramos_expoente=323 caudas=323 conjuntos_completos=23931 completos_mortos_indice=20654 com_primo_grande=0 casos_sem_fecho=467 ultimos_resolvidos=537 candidatos_ultimo=0 folhas=0 amigos=0 tempo=36.8s
+```
+
+### 5.4 k = 9: a parede muda de lugar — nós quase justos com s = 2
+
+O nó de §4.8 não era um nó com s = 1: era o **pai**, C = {5,7,11,13,31,97,52361}
+com **s = 2** e prod_sup = 9/5 − 1,76·10⁻⁸. Com dois desconhecidos o índice limita só
+o menor, U₁ < ~2·10⁸ (≈ 11 milhões de primos), e cada filho (s = 1) é agora
+resolvido em ~1 ms pelo solver — mas são 11 milhões de filhos (~3–4 h só este nó, e
+não é o único). O programa de Thackeray (arXiv:2310.15900, seção 3) enumera o mesmo
+tipo de intervalo (B_low, B_high) da sua Proposição 3 e levou 25 h de CPU para
+k = 9; k = 8 levou lá 28 500 s, contra 36 s aqui — a diferença é a partição por
+orçamentos + caudas + solver, não a força bruta.
+
+Por que o solver não se estende a s = 2 diretamente: se U₁ carrega um orçamento,
+Φ_ℓ(U₁) = ℓ^ε·K·U₂^f com K sobre C_ℓ; f = 0 é o caso resolvido, mas f ≥ 1 deixa U₂
+(sem cota pelo índice) dentro da equação, e o mesmo vale para os expoentes livres
+dos q ∈ C_ℓ. Fechar isso exige cotas sobre v_{U}(q^{ord} − 1) — os "primos especiais"
+de Thackeray (Corolário 6 com c limitado pela Proposição 9: cálculo finito de
+Wieferich generalizado) — ou uma contabilidade global de v_r que o projeto ainda não
+tem. Registrado em FRACASSOS.md como beco atual, com o que aproveitar.
+
+Ao fechar este bloco, k = 9 roda em background com limite de 12 h (log em
+scratchpad `k9f.log`); se terminar, entra como adendo.
+
+### 5.5 Rótulos
+
+Nenhum enunciado novo: ω(N) ≥ 9 (Resultado I) mantém o rótulo condicional do Bloco 4,
+agora com a árvore de k = 8 reduzida em 2,3× e os mesmos vereditos. O `omega_k.py`
+continua **sem passada adversarial própria**; a lista de alvos de §4.8 ganha o
+item (viii): a completude do solver (o argumento "um ℓ basta" e o tratamento de ε
+para ℓ ∈ {3, 5} no caso (0, 0)).

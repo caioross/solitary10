@@ -1,6 +1,6 @@
 # RESULTADOS — enunciados com rótulo (regras de rigor: `docs/METHODOLOGY.md`)
 
-Última atualização: 2026-09-10 (Fase 1, Bloco 4). Detalhes: `FASE_0.md`, `FASE_1.md`.
+Última atualização: 2026-09-10 (Fase 1, Bloco 5). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
 ## Notação
 
@@ -70,7 +70,16 @@ um primo grande sem fatorar r − 1) é o instrumento para k ≥ 9. A parede do 
 era um defeito de aperto (a₁ comprometido fora das cotas de índice), não falta de
 teoria — registrado em FRACASSOS.md. O rótulo de H (ω ≥ 7) continua apoiado no
 Bloco 2; I só sobe de rótulo após a passada adversarial própria do recursivo
-(alvos listados em FASE_1.md §4.8).
+(alvos listados em FASE_1.md §4.8 e §5.5).
+
+## Fase 1, Bloco 5 — último desconhecido por equações ciclotômicas (FASE_1.md, Bloco 5)
+
+Nenhum enunciado novo. O lema Φ_ℓ(U) = ℓ^ε·∏_{q∈C_ℓ} q^{e_q} (ℓ | a_U + 1 com
+testemunha em C, lado direito finito, U por raiz inteira exata) substitui a
+enumeração pelo índice do último desconhecido; verificado contra força bruta
+independente. k = 8 cai de 210 456 para 90 032 nós (36 s), mesmo veredito. k = 9
+fica bloqueado por nós quase justos com **dois** desconhecidos (FRACASSOS.md), o
+regime em que Thackeray gastou 25 h de CPU; roda em background ao fechar o bloco.
 
 ## Verificações numéricas
 

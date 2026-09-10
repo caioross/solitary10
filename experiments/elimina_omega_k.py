@@ -34,7 +34,7 @@ def roda(k: int, args_pins: bool = False) -> bool:
           f"conjuntos_completos={st.conjuntos_completos} "
           f"completos_mortos_indice={st.completos_mortos_indice} "
           f"com_primo_grande={st.conjuntos_com_primo_grande} "
-          f"casos_sem_fecho={st.casos_sem_fecho} "
+          f"casos_sem_fecho={st.casos_sem_fecho} ultimos_resolvidos={st.ultimos_resolvidos} candidatos_ultimo={st.candidatos_ultimo} "
           f"folhas={st.assinaturas_testadas} amigos={len(st.amigos)} tempo={dt:.1f}s")
     if st.pins and args_pins:
         print("   pins (prefixo, caso, primos pinados):")

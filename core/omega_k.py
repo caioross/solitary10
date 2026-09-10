@@ -67,7 +67,13 @@ PARTIÇÃO (Blocos 3-4), nesta ordem:
      distintas para divisores distintos: existe a_U+1 viável múltiplo de m0 sse
      os divisores de m0 admitem injeção em C (a injeção de um múltiplo restringe-se
      a m0) — teste finito que mata ou deixa o par aberto.
-  3. RAMIFICAÇÃO POR EXPOENTE COM CAUDA (Bloco 4, estilo Nielsen): num par
+  3. ÚLTIMO DESCONHECIDO POR EQUAÇÃO CICLOTÔMICA (Bloco 5): num par aberto com
+     s = 1, Phi_ell(U) = ell^eps · prod_{q em C_ell} q^{e_q} para um ell | a_U + 1
+     com testemunha em C; o lado direito é finito (cota do índice ou expoentes
+     fixos) e cada valor dá no máximo um U por raiz inteira — os candidatos
+     viram pins (conjuntos completos), sem enumerar primos. Ver o comentário
+     longo antes de _ultimo_desconhecido.
+  4. RAMIFICAÇÃO POR EXPOENTE COM CAUDA (Bloco 4, estilo Nielsen): num par
      aberto com prod_sup > 9/5 (senão o índice resolve), cada primo livre q tem
      ganho g_q = sup(q)/I(q^{min_q}) (o quanto I(q^{a_q}) ainda pode subir).
      Ordenando por ganho decrescente q_1, q_2, ..., seja m mínimo com
@@ -111,8 +117,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from fractions import Fraction
 from functools import lru_cache
+from math import gcd
 
-from sympy import cyclotomic_poly, divisors, factorint, isprime, nextprime, perfect_power
+from sympy import (cyclotomic_poly, divisors, factorint, integer_nthroot, isprime,
+                   nextprime, perfect_power)
 
 from core.cadeias import (
     _candidatos_m,
@@ -138,6 +146,8 @@ class StatsK:
     ramos_expoente: int = 0
     caudas: int = 0
     casos_sem_fecho: int = 0
+    ultimos_resolvidos: int = 0        # casos abertos com s = 1 fechados por equação ciclotômica
+    candidatos_ultimo: int = 0         # primos U candidatos produzidos por elas
     conjuntos_completos: int = 0
     conjuntos_com_primo_grande: int = 0
     assinaturas_testadas: int = 0
@@ -164,20 +174,35 @@ def _primos_pequenos() -> list[int]:
 _LIMITE_PEQUENOS = 100_000
 
 
+_PRIMORIAL = None
+
+
+def _primorial_pequeno() -> int:
+    """Produto de todos os primos < 10^5 (~144 000 bits), para achar de uma vez os
+    fatores pequenos de um valor por gcd (uma divisao longa no lugar de 9 592
+    modulos)."""
+    global _PRIMORIAL
+    if _PRIMORIAL is None:
+        from math import prod
+        _PRIMORIAL = prod(_primos_pequenos())
+    return _PRIMORIAL
+
+
 @lru_cache(maxsize=None)
 def _divisao_pequena(valor: int) -> tuple[tuple[int, ...], int]:
     """(primos < 10^5 de valor, cofator sem eles). O cofator e 1, primo, potencia
-    de primo ou composto com todos os primos > 10^5 (se o laco parou por q^2 > c,
-    o cofator e 1 ou primo). Cache: o mesmo Phi_d(q) e consultado em muitos nos."""
+    de primo ou composto com todos os primos > 10^5. g = gcd(valor, primorial) e
+    o produto dos primos pequenos de valor (sem multiplicidade); fatora-se g (so
+    primos < 10^5: factorint e imediato) e tiram-se esses primos de valor.
+    Cache: o mesmo Phi_d(q) e consultado em muitos nos."""
+    g = gcd(valor, _primorial_pequeno())
+    if g == 1:
+        return (), valor
+    peq = sorted(int(q) for q in factorint(g))
     c = valor
-    peq: list[int] = []
-    for q in _primos_pequenos():
-        if q * q > c:
-            break
-        if c % q == 0:
-            peq.append(q)
-            while c % q == 0:
-                c //= q
+    for q in peq:
+        while c % q == 0:
+            c //= q
     return tuple(peq), c
 
 
@@ -259,7 +284,14 @@ def _phi_valor(d: int, q: int) -> int | None:
     from sympy import totient
     if int(totient(d)) > GRAU_PHI_MAX:
         return None
-    val = int(cyclotomic_poly(d, q))
+    fat = factorint(d)
+    if len(fat) == 1:
+        # d = ell^j: Phi_{ell^j}(q) = Phi_ell(q^{ell^{j-1}}) = (q^{ell^j} - 1)/(q^{ell^{j-1}} - 1)
+        (ell, j), = fat.items()
+        base = q ** (ell ** (j - 1))
+        val = (base**ell - 1) // (base - 1)
+    else:
+        val = int(cyclotomic_poly(d, q))
     if val.bit_length() > PIN_BITS:
         return None
     return val
@@ -380,6 +412,137 @@ def _viavel_m0(k5: int, k3: int, C: list[int]) -> bool:
     divs = sorted(5**i * 3**j for i in range(k5 + 1) for j in range(k3 + 1)
                   if (i, j) != (0, 0))
     return _tem_atribuicao_injetiva(divs, C)
+
+
+# ---------------------------------------------------------------------------
+# Último desconhecido por equações ciclotômicas (Bloco 5)
+# ---------------------------------------------------------------------------
+#
+# Com s = 1 (S = C + {U}), a_U + 1 é ímpar >= 3 e tem um fator primo ell. Então
+# Phi_ell(U) | sigma(U^{a_U}) | sigma(N), e todo fator primo de Phi_ell(U) está em
+# S + {3}. Um primo q | Phi_ell(U) ou tem ord_q(U) = ell (q ≡ 1 mod ell, q != 3 pois
+# ord_3 <= 2, q != U) — logo q em C_ell = {q em C : ell | q - 1} — ou é q = ell
+# (não primitivo: U ≡ 1 mod ell, e então v_ell(Phi_ell(U)) = 1 por LTE), e ell tem
+# de estar em S + {3}, i.e. ell em C ou ell = 3. Zsygmondy (ell ímpar >= 3, U >= 2:
+# sem exceções) dá um primo primitivo r em C_ell, logo ell | r - 1: ell em L(C) =
+# {primos ímpares que dividem algum r - 1, r em C}, finito. Assim
+#
+#     Phi_ell(U) = ell^eps · prod_{q em C_ell} q^{e_q},   eps em {0, 1},
+#
+# e_q <= v_q(sigma(N)) = a_q (q >= 7). O lado direito percorre um conjunto FINITO
+# de vetores quando há cota: U < U_max pelo índice (prod_sup(C) < 9/5) dá
+# Phi_ell(U) <= Phi_ell(U_max); ou todos os q em C_ell têm expoente fixo. Para cada
+# valor R do lado direito há no máximo um U: U^{ell-1} < Phi_ell(U) < (U+1)^{ell-1},
+# logo U = floor(R^{1/(ell-1)}) — raiz inteira exata, sem enumerar primos.
+#
+# Qual ell: com s = 1 os orçamentos são exatos para U — k5 = v5(a_U+1) se U ≡ 1
+# (mod 5) e k3 = v3(a_U+1) se U ≡ 1 (mod 3) (Fato 2). k5 >= 1 => ell = 5 e U ≡ 1
+# (mod 5) (eps = 1); senão k3 >= 1 => ell = 3, eps = 1. Com (k5, k3) = (0, 0),
+# ell percorre L(C), com eps = 0 forçado para ell em {3, 5} (U ≡ 1 mod ell
+# alimentaria ell) e eps em {0, 1} só se ell em C. Um ell basta para a completude
+# (a união sobre os ell possíveis cobre todo U); a fase de conjunto completo
+# re-verifica tudo o mais.
+
+
+def _phi_primo(ell: int, u: int) -> int:
+    """Phi_ell(u) = (u^ell - 1)/(u - 1) para ell primo e u >= 2."""
+    return (u**ell - 1) // (u - 1)
+
+
+def _cota_indice_U(prod_sup: Fraction) -> int | None:
+    """Maior U compatível com o índice: I(U^{a_U}) < U/(U-1) e I(U^{a_U}) >=
+    (9/5)/prod_sup, logo U/(U-1) > (9/5)/prod_sup =: 1 + delta, U < 1 + 1/delta.
+    None se prod_sup >= 9/5 (sem cota)."""
+    delta = _o6.ALVO / prod_sup - 1
+    if delta <= 0:
+        return None
+    return int(1 + 1 / delta)
+
+
+def _L_de(C: list[int]) -> set[int] | None:
+    """Primos ímpares ell com ell | r - 1 para algum r em C; None se C tem primo
+    grande (r - 1 sem fatorar: L(C) seria incompleto)."""
+    if _grandes(C):
+        return None
+    out: set[int] = set()
+    for r in C:
+        out.update(ell for ell in factorint(r - 1) if ell > 2)
+    return out
+
+
+def _solucoes_phi(ell: int, eps: int, C_ell: list[int], R_max: int,
+                  exp_max: dict[int, int], lo: int, C_set: set[int]) -> set[int]:
+    """Primos U > lo, fora de C, com Phi_ell(U) = ell^eps · prod_{q em C_ell} q^{e_q},
+    produto <= R_max e e_q <= exp_max[q] quando q tem expoente fixo."""
+    P_max = R_max // ell**eps
+    R_min = _phi_primo(ell, int(nextprime(lo)))
+    out: set[int] = set()
+
+    def dfs(i: int, P: int) -> None:
+        if i == len(C_ell):
+            R = P * ell**eps
+            if R < R_min:
+                return
+            u = int(integer_nthroot(R, ell - 1)[0])
+            if u >= 2 and _phi_primo(ell, u) == R and u > lo and u not in C_set and isprime(u):
+                out.add(u)
+            return
+        q = C_ell[i]
+        emax = exp_max.get(q)
+        e = 0
+        Pq = P
+        while Pq <= P_max and (emax is None or e <= emax):
+            dfs(i + 1, Pq)
+            Pq *= q
+            e += 1
+
+    dfs(0, 1)
+    return out
+
+
+def _ultimo_desconhecido(C: list[int], lo: int, fixos: dict[int, int], k5: int, k3: int,
+                         prod_sup: Fraction) -> list[int] | None:
+    """Candidatos finitos para o único desconhecido U num caso aberto (k5, k3);
+    None se nenhuma cota limita o lado direito (prod_sup >= 9/5 com expoente livre
+    em C_ell, ou L(C) incompleto por primo grande)."""
+    C_set = set(C)
+    U_max = _cota_indice_U(prod_sup)
+
+    def resolve(ell: int, epss: list[int]) -> set[int] | None:
+        C_ell = [q for q in C if (q - 1) % ell == 0]
+        if U_max is not None:
+            R_max = _phi_primo(ell, U_max)
+        elif C_ell and all(q in fixos for q in C_ell):
+            R_max = ell ** max(epss)
+            for q in C_ell:
+                R_max *= q ** fixos[q]
+        else:
+            return None
+        out: set[int] = set()
+        for eps in epss:
+            out |= _solucoes_phi(ell, eps, C_ell, R_max, fixos, lo, C_set)
+        return out
+
+    if k5 >= 1:
+        r = resolve(5, [1])
+        return None if r is None else sorted(r)
+    if k3 >= 1:
+        r = resolve(3, [1])
+        return None if r is None else sorted(r)
+    L = _L_de(C)
+    if L is None:
+        return None
+    cands: set[int] = set()
+    for ell in sorted(L):
+        if ell in (3, 5):
+            epss = [0]
+        else:
+            epss = [0, 1] if ell in C_set else [0]
+        r = resolve(ell, epss)
+        if r is None:
+            return None
+        cands |= r
+    return sorted(cands)
 
 
 def _prod_min_sup(C: list[int], fixos: dict[int, int],
@@ -599,7 +762,16 @@ def _particao(C: list[int], s: int, lo: int, stats: StatsK,
             if s == 1 and dado5 is not None and dado3 is not None:
                 if (dado5, dado3) != (0, 0) and not _viavel_m0(dado5, dado3, C):
                     continue  # morto: a_U+1 exigiria ordens que C não oferece
-            # 3. ramificação por expoente com cauda
+                # 3. último desconhecido por equação ciclotômica (Bloco 5)
+                cands = _ultimo_desconhecido(C, lo, f1, dado5, dado3,
+                                             _prod_min_sup(C, f1, minimos)[1])
+                if cands is not None:
+                    stats.ultimos_resolvidos += 1
+                    stats.candidatos_ultimo += len(cands)
+                    for U in cands:
+                        registra((U,), f1, minimos, f"a1={a1}:ultimo(k5={dado5},k3={dado3})")
+                    continue
+            # 4. ramificação por expoente com cauda
             ramos = _ramos_expoente(C, f1, minimos)
             if ramos is None:
                 if f1 != fixos:

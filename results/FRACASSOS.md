@@ -14,6 +14,23 @@ Formato de entrada:
 
 ---
 
+## [2026-09-10] Fase 1, Bloco 5 — nós quase justos com s = 2 (beco atual para ω = 9)
+
+- **O que se tentou:** fechar k = 9 com o certificador recursivo depois de eliminar
+  a enumeração pelo índice nos nós com s = 1 (equações ciclotômicas para o último
+  desconhecido, FASE_1.md §5.1).
+- **Por que falhou (razão precisa):** o nó C = {5,7,11,13,31,97,52361}, a₁ = 2, tem
+  ∏sup = 9/5 − 1,76·10⁻⁸ com **dois** desconhecidos; o índice limita só o menor,
+  U₁ < 1,03·10⁸ (≈ 5,9 milhões de primos com U₂ > U₁, ~11 milhões no laço), e cada
+  filho, embora resolvido em ~1 ms, é um nó. A equação Φ_ℓ(U₁) = ℓ^ε·K·U₂^f não
+  fecha com f ≥ 1 (U₂ sem cota) nem com expoentes livres em C_ℓ. É o mesmo regime
+  em que Thackeray gastou 25 h de CPU (Proposição 3 + DFS).
+- **O que aproveitar:** o solver de s = 1 é definitivo e barato; o que falta para
+  s = 2 são cotas sobre v_U(q^{ord_U(q)} − 1) (Corolário 6 de Thackeray com c
+  limitado pela Proposição 9 — Wieferich generalizado por cálculo finito), ou uma
+  contabilidade global de v_r. Alternativa bruta: deixar o k = 9 rodar por horas
+  (a enumeração é finita e honesta).
+
 ## [2026-09-08] Fase 1, Bloco 3 — ω = 7 pela partição por orçamentos (parede honesta)
 
 - **O que se tentou:** certificar ω(N) ≥ 8 com o certificador recursivo
