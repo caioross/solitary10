@@ -740,7 +740,25 @@ Nota: para omega >= 7 o certificado load-bearing e o do Bloco 2 (experiments/eli
   de igualdade em s = 0 com todos os expoentes fixos; (vi) o lema de primo grande
   (B1), em especial v_r(σ(N)) = a_r (r ∉ {3, 5}) e o uso de A_r; (vii) o invariante
   "pin ≤ lo ⟹ morto" na presença de compromissos.
-- k = 9: em execução ao fechar este bloco (a₁ ≤ 1 + 8·7 = 57 na raiz; σ(5^{a₁})
-  com a₁ + 1 primo chega a Φ₅₃(5) de 121 bits — se o cofator composto exceder
-  `FATORA_BITS`, a saída honesta é `NaoCertificavel` na raiz, e o caminho é um
-  oráculo de fatorações certificadas por multiplicação, tabelas de Cunningham).
+- k = 9: em execução ao fechar este bloco, e **não vai terminar** no limite de
+  4 h — diagnóstico feito ao vivo. A primeira tentativa (antes de §4.6) parou
+  honestamente aos 108 s por um cofator de 91 bits; a versão final passa disso
+  (aos 885 s: 903 000 nós, 121 000 conjuntos completos, 31 777 caudas, 15 016
+  conjuntos com um primo grande — a via de §4.3 acionada de verdade) mas entra em
+  nós **quase justos com s = 1**, onde o fallback pelo índice degenera em
+  enumeração: em C = {5, 7, 11, 13, 31, 97, 52361} com a₁ = 2,
+  ∏sup = 9/5 − 1.76e-08 (o fator 52361/52360 cancela quase exatamente o
+  déficit de 3,4·10⁻⁵ dos seis primeiros), logo o último desconhecido U só é
+  limitado por U < 1.03e+08 — 5.9 milhões
+  de primos, cada um um conjunto completo com fase de expoentes (~1 000 nós/s).
+  O remédio não é mais índice: com s = 1, todo divisor primo ℓ de a_U + 1 tem
+  testemunha r ∈ C com ℓ | r − 1 (conjunto finito de ℓ), e Φ_ℓ(U) | σ(N) fatora
+  sobre C ∪ {3} com fatores só de ordem ℓ (ou o próprio ℓ): **Φ_ℓ(U) =
+  ℓ^ε·∏ q^{e_q}** é uma equação polinomial em U cujo lado direito percorre um
+  conjunto finito de vetores de expoentes (limitado por Φ_ℓ(U_max)) — resolve-se
+  por raiz inteira exata, sem enumerar primos. É a "extração do último slot" que
+  FRACASSOS.md (Bloco 2) mandou aproveitar, agora com o ℓ certo. **Candidato a
+  Bloco 5.** Segundo ponto pendente: σ(5^{a₁}) com a₁ + 1 primo (Φ₅₃(5), 121 bits)
+  na raiz de k = 9 fica como resto de ≥ 2 primos (sólido, mas sem pins); um
+  oráculo de fatorações certificadas por multiplicação (tabelas de Cunningham)
+  recuperaria os pins.
