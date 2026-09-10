@@ -385,7 +385,7 @@ acima são pontuais e não derrubam nenhum teorema usado como hipótese neste pr
 
 ## 11. Propostas de alvos para a Fase 1
 
-Três alvos concretos, em ordem de recomendação (aguardando aprovação humana):
+Três alvos concretos, em ordem de recomendação:
 
 ### Alvo 1 — Motor de busca em árvore certificado + reprodução automática de ω ≤ 7
 **O quê:** implementar em `core/` a busca em árvore sobre assinaturas (pᵢ, 2eᵢ) com os
@@ -460,4 +460,4 @@ veredictos. Toda computação citada como evidência está em scripts versionado
 as varreduras extras dos revisores (10⁷/10⁸/2,25·10¹⁰) são reforço não versionado e
 estão registradas como tal na seção 5.
 
-**Fase 0 encerrada. Aguardando aprovação humana explícita para abrir a Fase 1.**
+**Fase 0 encerrada. A Fase 1 abre após revisão deste relatório.**

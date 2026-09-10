@@ -1,6 +1,6 @@
 # Fase 1 — Fronteira computacional certificada
 
-Aberta em 2026-08-20 após aprovação humana da Fase 0. Este arquivo é o relatório
+Aberta em 2026-08-20 após o fechamento da Fase 0. Este arquivo é o relatório
 corrente da fase; bloco a bloco, com checkpoint humano entre blocos.
 
 ---
@@ -199,7 +199,7 @@ Com isso, os rótulos das seções 1.2–1.4 valem com a passada adversarial con
 
 ---
 
-## Bloco 2 — Cadeias de divisibilidade: ω(N) ≥ 7 (aprovado pelo usuário)
+## Bloco 2 — Cadeias de divisibilidade: ω(N) ≥ 7
 
 ### 2.1 Ferramentas novas (`core/cadeias.py`)
 
@@ -313,7 +313,7 @@ do Bloco 1), fechado por pinagem com P ∈ {31, 3221}.
 
 ### 2.5 Passada adversarial do Bloco 2
 
-Cinco revisores independentes (workflow `fase1-adversarial-bloco2`), instruídos a
+Cinco revisores independentes, instruídos a
 QUEBRAR a certificação ω = 6. Três concluíram nesta rodada (dois caíram por limite de
 sessão e foram relançados):
 
@@ -398,7 +398,7 @@ são > 23) — **não presumir que foi validada por uso** num futuro ω = 7.
 
 ---
 
-## Bloco 3 — Certificador recursivo e cota universal para a₁ (aprovado: "continue")
+## Bloco 3 — Certificador recursivo e cota universal para a₁
 
 ### 3.1 A ideia: um certificador para qualquer ω, com honestidade em cada nó
 
@@ -520,7 +520,7 @@ enquanto não passar por ela). ω = 7 permanece aberto para este método.
 
 ---
 
-## Bloco 4 — Além da parede de ω = 7: aperto, valuações diretas, caudas (aprovado: "continue")
+## Bloco 4 — Além da parede de ω = 7: aperto, valuações diretas, caudas
 
 Objetivo aprovado: empurrar o certificador recursivo para além do estado residual
 {5,7,11,13,31,331}+P do Bloco 3. O bloco terminou com **ω = 7 e ω = 8 certificados**

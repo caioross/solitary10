@@ -116,6 +116,7 @@ tests/        pytest — must be green before any commit
 experiments/  search and exploration scripts (reproducible, each with --help)
 results/      RESULTADOS.md (labelled statements), FASE_N.md (reports), FRACASSOS.md
 literatura/   PAPERS.md plus one reading note per paper, theorems stated verbatim
+publicacao/   manuscripts derived from results/ (currently the corrigenda note)
 ```
 
 Reports in `results/` and reading notes in `literatura/` are written in Portuguese; they
