@@ -143,17 +143,32 @@ def _v3_parcial(p: int, m: int) -> int:
     return v_p(3, m) if p % 3 == 1 else 0
 
 
-def _conjunto_completo(S: list[int], stats: Stats6) -> None:
-    """Conjunto de 6 primos fechado: FECHO de ordens + orçamentos + igualdade."""
+def _conjunto_completo(S: list[int], stats: Stats6,
+                       listas: list[list[int]] | None = None,
+                       fixos: dict[int, int] | None = None) -> None:
+    """Conjunto de primos fechado: FECHO de ordens + orçamentos + igualdade.
+
+    listas : expoentes válidos por primo já calculados pelo chamador (omega_k os
+             calcula sem fatorar r - 1 quando há um primo grande); None = calcular
+             aqui por expoentes_validos_ordens (caminho do Bloco 2, inalterado).
+    fixos  : expoentes COMPROMETIDOS no ramo (omega_k: {p: a_p}); a lista de cada
+             p em fixos fica restrita a a_p (o ramo cobre exatamente os N com
+             v_p(N) = a_p)."""
     stats.conjuntos_completos += 1
     extras, V3, v5_num, v5_den = _parametros_do_alvo()
     fs = frozenset(S)
-    listas = []
-    for p in S:
-        exps = expoentes_validos_ordens(p, fs, extras)
-        if not exps:
-            return
-        listas.append(exps)
+    if listas is None:
+        listas = []
+        for p in S:
+            exps = expoentes_validos_ordens(p, fs, extras)
+            if not exps:
+                return
+            listas.append(exps)
+    if fixos:
+        listas = [[a for a in lista if a == fixos[p]] if p in fixos else list(lista)
+                  for p, lista in zip(S, listas)]
+    if any(not lista for lista in listas):
+        return
 
     sup_suf = [Fraction(1)] * (len(S) + 1)
     min_suf = [Fraction(1)] * (len(S) + 1)

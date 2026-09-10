@@ -33,6 +33,17 @@ Formato de entrada:
   Φ_{ℓʲ}(q), e o emparelhamento injetivo (que é o argumento do fecho do Bloco 1
   aplicado ao primo desconhecido). k ≤ 6 passou de 2 745 conjuntos para 27. O
   Bloco 4 deve acrescentar o orçamento de v_P.
+- **Desfecho (2026-09-10, Bloco 4):** o diagnóstico "falta o orçamento de v_P"
+  estava errado — a parede era um DEFEITO DE APERTO, não de matemática nova: o
+  a₁ = 2 comprometido no ramo não entrava nas cotas de índice. Com I(5^{a₁}) no
+  lugar de 5/4, ∏sup{5,7,11,13,31,331} cai de 1,8012 para 1,7868 < 9/5 e o índice
+  limita P. Nenhuma contabilidade de v_P foi necessária para ω = 7. Lição: antes
+  de pedir teoria nova, verificar se toda informação já comprometida no ramo entra
+  em TODAS as podas (ver FASE_1.md, Bloco 4). A mesma lição bateu duas vezes mais
+  no Bloco 4: a cota universal a₁ ≤ 1 + (c₅+s)(c₅+s−1) não era re-checada com a₁
+  já fixo (ramo a₁ = 40 de k = 8 explodia a > 3·10⁶ nós; em {5,7} a cota dá
+  a₁ ≤ 31), e uma fatoração fora do orçamento descartava os pins já identificados
+  (informação certa nunca se descarta: FASE_1.md §4.6).
 
 ## [2026-08-21] Fase 1, Bloco 2 — escadas de expoentes com kills de janela (abandonada)
 

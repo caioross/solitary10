@@ -518,3 +518,229 @@ certificado** — pelo certificador do Bloco 2 (2 745 conjuntos; passada adversa
 (27 conjuntos; ainda **sem** passada adversarial própria — não é load-bearing
 enquanto não passar por ela). ω = 7 permanece aberto para este método.
 
+---
+
+## Bloco 4 — Além da parede de ω = 7: aperto, valuações diretas, caudas (aprovado: "continue")
+
+Objetivo aprovado: empurrar o certificador recursivo para além do estado residual
+{5,7,11,13,31,331}+P do Bloco 3. O bloco terminou com **ω = 7 e ω = 8 certificados**
+pelo recursivo (ω(N) ≥ 9), quatro peças novas no método e uma lição de método
+registrada em FRACASSOS.md. Tudo abaixo é aritmética exata (`Fraction`/`int`); os
+decimais no texto são só leitura humana dos racionais.
+
+### 4.1 Diagnóstico: a parede do Bloco 3 era um defeito de aperto, não de teoria
+
+O relatório do Bloco 3 (§3.5) pedia "contabilidade de v_P" para fechar o residual.
+Estava errado. O a₁ = 2 escolhido pela partição era **compromisso do ramo** mas não
+entrava nas cotas de índice: prod_sup usava 5/4 no lugar de I(5²) = 31/25. Com o
+compromisso exato,
+
+  ∏sup{5,7,11,13,31,331} = (31/25)(7/6)(11/10)(13/12)(31/30)(331/330) = 1,7868 < 9/5
+
+(era 1,8012 com 5/4), e o índice limita P: o nó cai no fallback e fecha. O mesmo
+aperto vale em qualquer nó (I(p^{a_p}) exato para todo primo comprometido, nas duas
+cotas) e, em conjuntos completos, permite matar de graça antes da fase de
+expoentes: prod_min > 9/5, ou prod_sup ≤ 9/5 com algum expoente livre (I(N) < prod_sup
+estrito), ou prod_sup < 9/5 com todos fixos. Em k = 6 os 22 conjuntos completos
+morrem todos aí (`completos_mortos_indice = 22`, 51 nós, 0 folhas).
+
+Lição (FRACASSOS.md, desfecho da entrada do Bloco 3): antes de pedir teoria nova,
+verificar se toda informação já comprometida no ramo entra em TODAS as podas.
+
+### 4.2 Segundo obstáculo: expoentes gigantes materializados
+
+Com a parede removida, k = 7 travava (> 560 s, sem progresso) no conjunto completo
+{5, 11, 31, 71, 181, 1741, 167140584971}. Diagnóstico por dump de pilha
+(`faulthandler`): `cadeias.sigma_fecha_em` calculando `p**(a+1)`. Causa: 167140584971
+− 1 = 2·5·16714058497 com o cofator **primo**, logo ord_r(p) ∈ {16714058497,
+83570292485, …} para os demais p, e m = ord_r(p) é candidato legítimo a a_p + 1 no
+fecho por ordens (todos os seus divisores > 1 são {m} ⊆ D). A reconstrução
+tentava σ(5^{16714058496}) — 3,9·10¹⁰ bits.
+
+Correção em `core/cadeias.py`, semântica idêntica, só o cálculo muda:
+
+- **Valuações diretas.** v_q(σ(p^a)) = v_q(p^{a+1} − 1) − v_q(p − 1), com
+  v_q(p^{n} − 1) por exponenciação modular (p^n mod q^j para j = 1, 2, …). Vale para
+  TODO primo q ≠ p (inclusive q = 2) e não precisa de ord_q(p) — logo não precisa
+  fatorar q − 1. `v_q_sigma` (fórmula de Nielsen/Voight por ordens) continua no
+  módulo e nos testes; `_v_q_de_p_ordem_menos_1` também passou a modular.
+- **Gate de tamanho exato.** O produto P = ∏ q^{v_q(σ(p^a))} sempre divide σ(p^a).
+  Se bl(P) ≤ a·(bl(p) − 1) (bl = comprimento em bits) então
+  P < 2^{bl(P)} ≤ 2^{a(bl(p)−1)} ≤ p^a < σ(p^a), e a resposta é False sem
+  materializar p^{a+1}. Onde a potência é calculável a resposta é a mesma
+  (`test_gate_de_tamanho_e_so_atalho`).
+- Divisores ímpares de m por fatoração (`sympy.divisors`, m divide um q − 1 já
+  fatorado por `n_order`) no lugar da divisão por tentativa até √m.
+
+O conjunto que travava resolve em 0,00 s: expoentes válidos 5 → [2, 4, 14],
+11 → [] (morto). Testes novos em `tests/test_cadeias.py`: valuação direta contra
+força bruta (exaustivo, q = 2 incluído), modular contra potência inteira, o
+conjunto real acima em < 5 s, divisores contra força bruta.
+
+### 4.3 Primos grandes sem fatorar r − 1 (implementado e testado; ainda não acionado)
+
+Pins como Φ₅(q) passam de 100 bits, e r − 1 pode não ser fatorável — o que torna
+ord_r(p) inacessível justamente onde o fecho por ordens precisa dele. Lema
+implementado em `omega_k._expoentes_com_primo_grande` (cabeçalho de
+`core/omega_k.py`, "PRIMOS GRANDES"): num conjunto completo S = S′ ∪ {r} com r
+grande ((r−1) com mais de `ORDEM_BITS` = 80 bits), para p ∈ S′ todo divisor d > 1 de
+a_p + 1 é ord_{r′}(p) com testemunhas distintas para divisores distintos, e r
+testemunha no máximo UM divisor, o = ord_r(p). Com D′ = ordens de p módulo S′∖{p}
+(computáveis), os casos são exaustivos: (A) todos os divisores em D′; (B2) a_p + 1 ∈
+D′ com exatamente um divisor d* fora de D′ e ord_r(p) = d* (teste modular);
+(B1) a_p + 1 = o ∉ D′ com todos os divisores próprios em D′ — o composto ⟹ o = ℓ·e
+com ℓ primo ∈ D′, e ∈ D′ (finito); o = ℓ primo ⟹ Φ_ℓ(p) = ℓ^ε·r^v (o único fator
+primitivo possível é r; o não-primitivo só ℓ, ε ≤ 1 por LTE), com
+v ≤ v_r(σ(N)) = a_r ≤ A_r, onde A_r vem dos expoentes válidos de r (as ordens de r
+módulo os primos pequenos são acessíveis; lista vazia = conjunto morto). Logo
+p^{ℓ−1} < Φ_ℓ(p) ≤ ℓ·r^{A_r} limita ℓ, que é enumerado e testado (ℓ | r − 1 e
+p^ℓ ≡ 1 mod r). As valuações da reconstrução são as diretas de §4.2. Dois primos
+grandes no mesmo conjunto: `NaoCertificavel`.
+
+Validação: forçando `ORDEM_BITS = 12` nos testes, os conjuntos completos reais de
+k = 7 com exatamente um primo "grande" (≥ 20 conjuntos) produzem pela via nova
+**exatamente** as listas da via direta (`expoentes_validos_ordens`); e o caso (B1)
+primo é exercitado em {5,7,11,13,31}+19 (ord₁₉(7) = 3, 3 não é ordem de 7 módulo
+nenhum outro primo do conjunto; σ(7²) = 3·19 fecha). Honestidade: em k ≤ 8 nenhum
+primo de conjunto completo passou de 65 bits (`conjuntos_com_primo_grande = 0`), a
+via só foi exercitada pelos testes.
+
+### 4.4 ω = 7 fecha
+
+`certifica_omega(7)` (versão final do bloco): 549 nós, 172 partições, 51 fallbacks
+de índice, 153 conjuntos completos (224 mortos pela poda barata), 0 folhas,
+0 amigos, 1,5 s, sem `NaoCertificavel`. Contagens congeladas em
+`tests/test_omega_k.py`. (Antes da poda de §4.6 eram 648 nós e 164 conjuntos —
+mesmo veredito.)
+
+### 4.5 ω = 8: compromissos gerais e ramificação por expoente com cauda
+
+Primeira parede de k = 8: C = {5,7,11,13,31,71}, s = 2, a₁ = 2 — os dois orçamentos
+(v₅ = 1, v₃ = 2) podem ser carregados pelos dois desconhecidos (sem raciocínio
+finito com s = 2) e ∏sup = 1,80686 ≥ 9/5. Mas o nó é **apertado**:
+∏I(p²) = 1,79935 e a₇ = 4 já dá 1,80451 > 9/5 (morto com s ≥ 1); logo a₇ = 2 é
+forçado e σ(7²) = 57 = 3·19 obriga 19 ∈ S — pin (ou morte, se 19 ≤ lo). É a
+ramificação por expoente de Nielsen, que exige generalizar o compromisso: o estado
+passa a carregar `fixos = {p: a_p}` para qualquer primo conhecido. Um compromisso
+entra exato nas cotas, força v_ℓ(a_p + 1) nos orçamentos (alimentador fixo tem k
+forçado), restringe a lista no conjunto completo e — o essencial — **fecha
+σ(p^{a_p}) em S ∪ {3}** peça a peça (Φ_d(p) para d | a_p + 1, cada uma bem menor que
+σ(p^{a_p})): primos novos são pins, mais que s ou algum ≤ lo é morte.
+
+Segunda parede: C = {5,7,11,13,31,89}, s = 2, a₁ = 2 — nó **solto**: nenhum primo
+sozinho tem janela finita (7 → ∞ dá 1,79942 < 9/5), embora ∏sup = 1,80166 > 9/5.
+Solução clássica (Nielsen): **caudas**. Cada primo livre q tem ganho
+g_q = sup(q)/I(q^{min_q}); ordenando por ganho decrescente q₁, q₂, …, seja m mínimo com
+prod_min·g_{q₁}⋯g_{q_m} > 9/5 (existe: o produto total é prod_sup). Ramifica-se
+q = q_m em a_q ∈ {min_q, …, A − 2} EXATOS e a CAUDA a_q ≥ A, com A o menor par tal que
+prod_min·g_{q₁}⋯g_{q_{m−1}}·I(q^A)/I(q^{min_q}) > 9/5 (partição completa de a_q).
+Progresso: A > min_q pela minimalidade de m; na cauda os m − 1 ganhos maiores já
+bastam (m decresce); com m = 1 a cauda morre. Medida (s, #primos livres, m)
+estritamente decrescente em toda aresta ⟹ a árvore é finita. No residual: ganhos
+g₇ = 1,00292 > g₁₁ = 1,00075 > …; prod_min·g₇ = 1,79942 ≤ 9/5 < prod_min·g₇·g₁₁
+⟹ ramifica o 11: a₁₁ = 2 exato (σ(121) = 7·19 pina o 19) e cauda a₁₁ ≥ 4; na cauda
+m = 1 ⟹ ramifica o 7: a₇ = 2 exato (57 = 3·19) e cauda a₇ ≥ 4, morta
+(prod_min = 1,8005 > 9/5). Congelado em `test_ramificacao_por_expoente_com_cauda_no_residual_de_k8`.
+
+Resultado (versão final do bloco): **k = 8 certificado** — 210 456 nós, 45 254
+partições, 323 ramificações por expoente (323 caudas), 839 fallbacks de índice,
+145 659 conjuntos completos (19 350 mortos pela poda barata), 467 casos sem fecho,
+0 folhas, 0 amigos, 72 s, sem `NaoCertificavel`. Maior primo em C:
+20796629989288946761 (65 bits). (A primeira versão que fechou k = 8 — sem cache e
+sem a poda de §4.6 — levou 312 s em 214 200 nós; mesmo veredito.)
+
+### 4.6 Fechos fora do orçamento: informação parcial nunca é descartada
+
+A primeira tentativa de k = 9 parou honestamente aos 108 s: `NaoCertificavel`
+"cofator composto de 91 bits com s = 2 — fatoração fora do orçamento"
+(`FATORA_BITS = 90`). A exceção nascia dentro da partição e abortava o nó inteiro,
+mesmo quando os outros casos do nó pinavam e as caudas/índice fechariam o caso
+problemático. Duas iterações até a semântica certa:
+
+1. *Primeira versão* — o caso com fecho fora do orçamento virava simplesmente
+   "aberto" (sem pins). Sólido, mas **descartava informação certa**: em k = 8 o
+   ramo a₁ = 40 (σ(5⁴⁰) = Φ₄₁(5), 95 bits) perdia os pins pequenos já achados
+   (20743, 45985571) e o índice tinha de reencontrá-los enumerando o menor
+   desconhecido até 4,6·10⁷ — o run passou de 214 200 para > 3 000 000 nós e foi
+   abortado. (Na versão anterior o mesmo ramo nem existia: a exceção abortava a
+   partição da raiz, que caía no índice, e as partições dos filhos, com s menor,
+   tinham a₁ ≤ 31.)
+2. *Versão final* — `_novos_e_resto` devolve (primos novos já identificados, resto):
+   os identificados são pins válidos **independentemente** do resto, e um resto
+   composto fora do orçamento garante ≥ 2 primos novos ainda não identificados
+   (composto que não é potência de primo, coprimo com os permitidos e com os
+   identificados): morte se não cabem nos slots. Peças distintas de σ(p^a) têm restos
+   coprimos (um primo comum a Φ_d(p) e Φ_{d′}(p) divide d/d′ ≤ a + 1 < 10⁵), logo
+   contam 2 cada; restos de bases distintas podem partilhar primos e contam 2 no
+   total. Uma peça fora dos gates de Φ (`PIN_BITS`, `GRAU_PHI_MAX`) é só informação
+   a menos (`casos_sem_fecho` nas estatísticas). Nenhuma exceção sai mais da
+   partição; `NaoCertificavel` fica reservada ao nó sem saída (caso aberto sem
+   ramo e sem índice) e ao conjunto completo com dois primos grandes.
+
+3. *Poda que faltava* — mesmo com os pins conservados, o ramo a₁ = 40 seguia
+   pelo índice: Φ₄₁(5) não tem fator < 10⁵ (só o resto de 95 bits, extra = 2), e
+   a **cota universal** a₁ ≤ 1 + (c₅+s)(c₅+s−1) só era aplicada ao enumerar a₁
+   livre. Ela vale em TODO nó: em {5, 7} com s = 6 dá a₁ ≤ 31 < 40 — o filho morre
+   na hora. Com a₁ fixo, a cota é re-checada em cada partição (`test_cota_universal_
+   vale_tambem_para_a1_comprometido`). Isto enxuga também k ≤ 7 (k = 6: 60 → 51
+   nós; k = 7: 648 → 549 nós), sem mudar veredito algum.
+
+Junto entrou cache
+(`_phi_valor`, divisão por tentativa, classificação do cofator: o perfil de k = 8
+mostrava `_novos_de` + `cyclotomic_poly` com ~45% do tempo). A primeira versão do
+cache tinha um **bug de falso morto**: a divisão por tentativa pode parar cedo
+(q² > c) deixando em c um primo *permitido* pequeno (ex.: Φ₃(5) = 31 com 31 ∈ C),
+que a classificação contava como novo e consumia um slot; `_novos_de_sigma(5, 8,
+·, s = 2)` devolvia "morto" (σ(5⁸) = 31·19·829 precisa de 2 slots novos, não 3) e
+k = 6 caía de 60 para 35 nós. Pegaram-no dois testes: a equivalência
+`_novos_de_sigma` ≡ `_novos_de` sobre σ(p^a) inteiro e as contagens congeladas de
+k = 6/7. Fica registrado como mais um "mutante" que a bateria detecta (na linha
+dos três do Bloco 2); a lição de método vai para FRACASSOS.md.
+
+### 4.7 Saída do script oficial
+
+`python experiments/elimina_omega_k.py --k-max 8` (linhas de pins omitidas):
+
+```
+omega = 1: nos=1 mortos_min=0 ramo_i=0 particoes=0 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=1 com_primo_grande=0 casos_sem_fecho=0 folhas=0 amigos=0 tempo=0.0s
+omega = 2: nos=1 mortos_min=0 ramo_i=0 particoes=1 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=0 com_primo_grande=0 casos_sem_fecho=0 folhas=0 amigos=0 tempo=0.0s
+omega = 3: nos=3 mortos_min=0 ramo_i=0 particoes=2 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=1 com_primo_grande=0 casos_sem_fecho=0 folhas=0 amigos=0 tempo=0.1s
+omega = 4: nos=5 mortos_min=0 ramo_i=2 particoes=4 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=1 com_primo_grande=0 casos_sem_fecho=0 folhas=0 amigos=0 tempo=0.0s
+omega = 5: nos=7 mortos_min=0 ramo_i=5 particoes=7 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=0 com_primo_grande=0 casos_sem_fecho=0 folhas=0 amigos=0 tempo=0.1s
+omega = 6: nos=51 mortos_min=0 ramo_i=17 particoes=29 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=22 com_primo_grande=0 casos_sem_fecho=3 folhas=0 amigos=0 tempo=0.6s
+omega = 7: nos=549 mortos_min=0 ramo_i=51 particoes=172 ramos_expoente=0 caudas=0 conjuntos_completos=153 completos_mortos_indice=224 com_primo_grande=0 casos_sem_fecho=41 folhas=0 amigos=0 tempo=0.9s
+omega = 8: nos=210456 mortos_min=193 ramo_i=839 particoes=45254 ramos_expoente=323 caudas=323 conjuntos_completos=145659 completos_mortos_indice=19350 com_primo_grande=0 casos_sem_fecho=467 folhas=0 amigos=0 tempo=71.6s
+
+CERTIFICADO: todo amigo de 10 tem omega(N) >= 9.
+Rotulo: [PROVADO-CONDICIONAL: Teoremas A-D e Lemas/Fato 0 da Fase 0 + Zsygmondy, LTE e formula de valuacao de Nielsen/Voight (classicos) + correcao de core/omega_k.py (certificador recursivo AINDA SEM passada adversarial propria - nao e load-bearing), core/omega6.py e core/cadeias.py (passada adversarial em results/FASE_1.md §2.5) + correcao de sympy.n_order/factorint/isprime/nextprime/cyclotomic_poly nas chamadas consumidas]
+Nota: para omega >= 7 o certificado load-bearing e o do Bloco 2 (experiments/elimina_omega6.py); acima disso so este recursivo cobre, e o rotulo fica pendente da passada adversarial propria.
+```
+
+### 4.8 Rótulos, honestidade e o que falta
+
+- **Resultado I.** Todo amigo de 10 tem **ω(N) ≥ 9**.
+  `[PROVADO-CONDICIONAL: Teoremas A–D e Lemas/Fato 0 da Fase 0 + Zsygmondy, LTE e
+  fórmula de valuação de Nielsen/Voight (clássicos) + correção de core/omega_k.py
+  (AINDA SEM passada adversarial própria) e de core/cadeias.py/core/omega6.py
+  (passada adversarial §2.5, mas com as alterações de §4.2 e a extensão de
+  _conjunto_completo ainda não revisadas adversarialmente) + correção de
+  sympy.n_order/factorint/isprime/nextprime/cyclotomic_poly/divisors nas chamadas
+  consumidas]`. **Não é load-bearing** até a passada adversarial própria; e não é
+  novo — Thackeray (arXiv:2310.15900) tem ω(N) ≥ 10. O valor é a reprodução
+  mecânica, independente e curta (75 s) de uma parte do estado da arte, com
+  método reutilizável para k ≥ 9.
+- Alvos da passada adversarial do recursivo (obrigatória antes de qualquer subida de
+  rótulo): (i) completude da partição de a_q em `_ramos_expoente` e a alegação "a
+  cauda com prod_min > 9/5 morre com s ≥ 1"; (ii) a contagem de testemunhas
+  `faltam` em `_casos_ell` (níveis sem testemunha conhecida exigem desconhecidos
+  distintos) e o k forçado dos alimentadores fixos; (iii) a equivalência de
+  `_viavel_m0` (múltiplo viável ⟺ m₀ viável); (iv) `_novos_de` com cofator
+  potência de primo / composto e os gates (`FATORA_BITS`, `PIN_BITS`,
+  `GRAU_PHI_MAX`), que só podem levantar `NaoCertificavel`, nunca matar; (v) a poda
+  de igualdade em s = 0 com todos os expoentes fixos; (vi) o lema de primo grande
+  (B1), em especial v_r(σ(N)) = a_r (r ∉ {3, 5}) e o uso de A_r; (vii) o invariante
+  "pin ≤ lo ⟹ morto" na presença de compromissos.
+- k = 9: em execução ao fechar este bloco (a₁ ≤ 1 + 8·7 = 57 na raiz; σ(5^{a₁})
+  com a₁ + 1 primo chega a Φ₅₃(5) de 121 bits — se o cofator composto exceder
+  `FATORA_BITS`, a saída honesta é `NaoCertificavel` na raiz, e o caminho é um
+  oráculo de fatorações certificadas por multiplicação, tabelas de Cunningham).

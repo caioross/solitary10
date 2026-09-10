@@ -128,3 +128,65 @@ def test_v_q_sigma_recusa_q_par():
     import pytest
     with pytest.raises(ValueError, match="ímpar"):
         v_q_sigma(2, 5, 3)
+
+
+# ---------------------------------------------------------------------------
+# Bloco 4 — valuações diretas (sem ordens), gate de tamanho, divisores
+# ---------------------------------------------------------------------------
+
+def test_v_q_sigma_direto_contra_valuacao_direta_exaustiva_inclusive_q_2():
+    from core.cadeias import v_q_sigma_direto
+    for p in PRIMOS:
+        for q in [2] + PRIMOS:
+            if q == p:
+                continue
+            for a in range(0, 21):
+                assert v_q_sigma_direto(q, p, a) == v_p(q, sigma_pp(p, a)), (q, p, a)
+
+
+def test_v_q_de_p_ordem_menos_1_modular_bate_com_a_potencia_inteira():
+    from core.cadeias import _v_q_de_p_ordem_menos_1, ordem_mod
+    for p in PRIMOS:
+        for q in PRIMOS + [3221, 19531]:
+            if q == p:
+                continue
+            assert _v_q_de_p_ordem_menos_1(q, p) == v_p(q, p ** ordem_mod(p, q) - 1), (q, p)
+
+
+def test_sigma_fecha_em_nao_materializa_expoentes_enormes():
+    # conjunto real de k = 7 (Bloco 4): 167140584971 - 1 = 2·5·16714058497 com o
+    # cofator primo, logo ord_r(p) ~ 10^10 e a+1 = ord_r(p) é candidato legítimo
+    # do fecho; a reconstrução tem de responder False pelo gate de tamanho sem
+    # calcular p^{a+1} (que teria 10^10·log2(p) bits). Tempo < 1 s.
+    import time
+    S = frozenset({5, 11, 31, 71, 181, 1741, 167140584971})
+    t = time.perf_counter()
+    assert not sigma_fecha_em(5, 16714058497 - 1, S)
+    assert not sigma_fecha_em(11, 83570292485 - 1, S)
+    assert expoentes_validos_ordens(5, S) == [2, 4, 14]
+    assert expoentes_validos_ordens(11, S) == []
+    assert time.perf_counter() - t < 5
+
+
+def test_gate_de_tamanho_e_so_atalho():
+    # onde a potência é calculável, a resposta com e sem o gate é a mesma
+    from core.cadeias import v_q_sigma_direto
+    casos = [(5, frozenset({5, 7, 11, 13, 31})), (7, frozenset({5, 7, 19})),
+             (13, frozenset({5, 7, 13, 61})), (5, frozenset({5, 11, 71}))]
+    for p, S in casos:
+        for a in range(2, 60, 2):
+            prod = 1
+            for q in sorted(S | {3}):
+                if q != p:
+                    prod *= q ** v_q_sigma_direto(q, p, a)
+            assert sigma_fecha_em(p, a, S) == (prod == sigma_pp(p, a)), (p, a)
+
+
+def test_divisores_impares_por_fatoracao_batem_com_divisao_por_tentativa():
+    from core.cadeias import _divisores_impares_maiores_que_1
+
+    def bruto(m):
+        return {d for d in range(3, m + 1, 2) if m % d == 0}
+
+    for m in list(range(1, 400, 2)) + [3455, 10365, 76293945, 3**5 * 5**3]:
+        assert set(_divisores_impares_maiores_que_1(m)) == bruto(m), m

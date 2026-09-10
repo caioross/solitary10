@@ -35,7 +35,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from sympy import n_order
+from sympy import divisors, n_order
 
 # ---------------------------------------------------------------------------
 # valuações e ordens
@@ -59,8 +59,34 @@ def ordem_mod(p: int, q: int) -> int:
 
 @lru_cache(maxsize=None)
 def _v_q_de_p_ordem_menos_1(q: int, p: int) -> int:
-    """v_q(p^{ord_q(p)} - 1), computado por divisões exatas (número pequeno)."""
-    return v_p(q, p ** ordem_mod(p, q) - 1)
+    """v_q(p^{ord_q(p)} - 1) por exponenciação modular: q^v | p^o - 1 sse
+    p^o ≡ 1 (mod q^v). (A potência inteira p^o teria o·log2(p) bits — proibitivo
+    quando q é um primo grande e o = ord_q(p) ~ q.)"""
+    o = ordem_mod(p, q)
+    v = 1  # q | p^o - 1 por definição de ordem
+    while pow(p, o, q ** (v + 1)) == 1:
+        v += 1
+    return v
+
+
+def v_q_potencia_menos_1(q: int, p: int, n: int) -> int:
+    """v_q(p^n - 1) para q primo, q ∤ p, n >= 1 — por exponenciação modular, sem
+    ordens nem fatorações: q^v | p^n - 1 sse p^n ≡ 1 (mod q^v). Termina porque
+    p^n - 1 é finito."""
+    v = 0
+    while pow(p, n, q ** (v + 1)) == 1:
+        v += 1
+    return v
+
+
+def v_q_sigma_direto(q: int, p: int, a: int) -> int:
+    """v_q(sigma(p^a)) = v_q(p^{a+1} - 1) - v_q(p - 1), direto da identidade
+    sigma(p^a) = (p^{a+1} - 1)/(p - 1). Vale para TODO primo q != p (inclusive
+    q = 2) e não precisa de ord_q(p) — logo não precisa fatorar q - 1, o que
+    permite conjuntos com primos grandes. Equivale a v_q_sigma onde ambas valem."""
+    if q == p:
+        return 0
+    return v_q_potencia_menos_1(q, p, a + 1) - v_p(q, p - 1)
 
 
 def v_q_sigma(q: int, p: int, a: int) -> int:
@@ -130,31 +156,37 @@ def sigma_fecha_em(p: int, a: int, conjunto: frozenset[int],
                    extras: frozenset[int] = frozenset({3})) -> bool:
     """True sse TODOS os fatores primos de sigma(p^a) estão em conjunto ∪ extras.
 
-    Teste exato por reconstrução: sigma(p^a) == prod q^{v_q_sigma(q, p, a)}.
-    (>= sempre vale termo a termo; igualdade sse não sobra fator fora do conjunto.)
+    Teste exato por reconstrução: sigma(p^a) == prod q^{v_q(sigma(p^a))}, com as
+    valuações por exponenciação modular (v_q_sigma_direto: sem ordens, sem
+    fatorar q - 1). O produto sempre DIVIDE sigma(p^a); a igualdade falha sse sobra
+    fator fora do conjunto.
+
+    Gate de tamanho (exato, só inteiros): prod < 2^{bl(prod)} e p^a >= 2^{a·(bl(p)-1)}
+    (bl = bit_length). Se bl(prod) <= a·(bl(p)-1) então prod < p^a < sigma(p^a) e a
+    resposta é False SEM materializar p^{a+1} — essencial quando a+1 é uma ordem
+    módulo um primo grande (a ~ 10^11 e além).
     """
-    alvo = (p ** (a + 1) - 1) // (p - 1)
     prod = 1
     for q in sorted(set(conjunto) | set(extras)):
         if q != p:
-            v = v_q_sigma(q, p, a)
+            v = v_q_sigma_direto(q, p, a)
             if v:
                 prod *= q**v
+    if prod.bit_length() <= a * (p.bit_length() - 1):
+        return False
+    alvo = (p ** (a + 1) - 1) // (p - 1)
     return prod == alvo
 
 
-def _divisores_impares_maiores_que_1(m: int) -> set[int]:
-    """Divisores ímpares > 1 de m ímpar, por divisão por tentativa até sqrt(m)."""
-    out = set()
-    d = 3
-    while d * d <= m:
-        if m % d == 0:
-            out.add(d)
-            out.add(m // d)
-        d += 2
-    if m > 1:
-        out.add(m)
-    return out
+@lru_cache(maxsize=None)
+def _divisores_impares_maiores_que_1(m: int) -> frozenset[int]:
+    """Divisores ímpares > 1 de m, pela fatoração (sympy.divisors). A divisão por
+    tentativa até sqrt(m) não escala: m pode ser uma ordem módulo um primo de
+    dezenas de bits (o custo aqui é o de fatorar m, que divide q - 1 já fatorado
+    por n_order)."""
+    if m <= 1:
+        return frozenset()
+    return frozenset(d for d in divisors(m) if d > 1 and d % 2 == 1)
 
 
 def _candidatos_m(D: set[int]) -> list[int]:
@@ -185,6 +217,8 @@ __all__ = [
     "v_p",
     "ordem_mod",
     "v_q_sigma",
+    "v_q_sigma_direto",
+    "v_q_potencia_menos_1",
     "f_menor_ordem_impar",
     "ordens_impares",
     "sigma_fecha_em",

@@ -1,6 +1,6 @@
 # RESULTADOS — enunciados com rótulo (regras de rigor: `docs/METHODOLOGY.md`)
 
-Última atualização: 2026-09-08 (Fase 1, Bloco 3). Detalhes: `FASE_0.md`, `FASE_1.md`.
+Última atualização: 2026-09-10 (Fase 1, Bloco 4). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
 ## Notação
 
@@ -54,7 +54,23 @@ viabilidade injetiva de testemunhas) **re-certifica ω(N) ≥ 7 de forma indepen
 e curta** (27 conjuntos completos, 57 nós) — ainda sem passada adversarial própria,
 portanto NÃO load-bearing para o rótulo de H, que segue apoiado no Bloco 2.
 **ω = 7 permanece aberto** para o método; fronteira caracterizada em FASE_1.md §3.5
-e FRACASSOS.md (estado {5,7,11,13,31,331}+P, a_P = 14 forçado).
+e FRACASSOS.md (estado {5,7,11,13,31,331}+P, a_P = 14 forçado). *(Superado no Bloco 4.)*
+
+## Fase 1, Bloco 4 — aperto, valuações diretas, caudas (FASE_1.md, Bloco 4)
+
+| # | Enunciado | Rótulo |
+|---|---|---|
+| I | **Todo amigo de 10 tem ω(N) ≥ 9** (nenhum amigo tem ω = 7: 549 nós  153 conjuntos completos  1 5 s; nenhum tem ω = 8: 210 456 nós  145 659 conjuntos completos  323 caudas  72 s; zero amigos  zero `NaoCertificavel`) | `[PROVADO-CONDICIONAL: Teoremas A–D e Lemas/Fato 0 da Fase 0 + Zsygmondy, LTE e fórmula de valuação de Nielsen/Voight (clássicos) + correção de core/omega_k.py (AINDA SEM passada adversarial própria — NÃO load-bearing) e das alterações de core/cadeias.py e core/omega6.py deste bloco (§4.2, ainda não revisadas adversarialmente) + correção de sympy.n_order/factorint/isprime/nextprime/cyclotomic_poly/divisors nas chamadas consumidas]` |
+
+Contexto de I: **não é novo** — Thackeray (arXiv:2310.15900) prova ω(N) ≥ 10. O valor é
+a reprodução mecânica, independente e curta (75 s de CPU) de parte do estado da
+arte, e o método (compromissos de expoente fechados por peças ciclotômicas,
+ramificação com cauda de Nielsen com medida de terminação, conjuntos completos com
+um primo grande sem fatorar r − 1) é o instrumento para k ≥ 9. A parede do Bloco 3
+era um defeito de aperto (a₁ comprometido fora das cotas de índice), não falta de
+teoria — registrado em FRACASSOS.md. O rótulo de H (ω ≥ 7) continua apoiado no
+Bloco 2; I só sobe de rótulo após a passada adversarial própria do recursivo
+(alvos listados em FASE_1.md §4.8).
 
 ## Verificações numéricas
 
