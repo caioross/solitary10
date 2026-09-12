@@ -24,7 +24,8 @@ worse than no result at all.
 ## Known constraints on a hypothetical friend `N`
 
 Every entry below was re-derived, or at least verified numerically, before being used as
-a hypothesis anywhere in this repository.
+a hypothesis anywhere in this repository. Reading notes with exact statements are in
+`literature/`.
 
 | # | Constraint | Source |
 |---|---|---|
@@ -37,7 +38,7 @@ a hypothesis anywhere in this repository.
 | 7 | Not all halved exponents are `≡ 1 (mod 3)`; conditions mod 8 on `σ(5^{2a}) + σ(Q²)`; `N > (25/81)·∏(2aᵢ+1)²`, in particular `N > 625·9^{ω(N)−3}` | arXiv:2504.08295 |
 
 Rows 3 and 6 are stated here as *verified* rather than as printed: the published forms
-are stronger, and the gap is documented in `results/FASE_0.md` §10.
+are stronger, and the gap is documented in `results/PHASE_0.md` §10.
 
 Strategic context: the folklore conjecture is that `2p` is solitary for every prime
 `p ≥ 5`, of which `10 = 2·5` is the smallest case. The literature attacks one number at
@@ -53,10 +54,10 @@ These are not negotiable.
    for human-readable display.
 
 2. **Every statement carries a label:**
-   - `[PROVADO]` / *proved* — complete written proof, adversarially reviewed.
-   - `[PROVADO-CONDICIONAL: hypotheses]` — proved modulo explicitly listed inputs.
-   - `[VERIFICADO-NUMERICAMENTE: range]` — exhaustively checked over a stated range.
-   - `[HEURÍSTICA]` / `[CONJECTURA]`.
+   - `[PROVED]` — complete written proof, adversarially reviewed.
+   - `[PROVED-CONDITIONAL: hypotheses]` — proved modulo explicitly listed inputs.
+   - `[VERIFIED-NUMERICALLY: range]` — exhaustively checked over a stated range.
+   - `[HEURISTIC]` / `[CONJECTURE]`.
 
    Conditional labels name every external dependency, including the library routines
    whose output the argument consumes.
@@ -73,7 +74,7 @@ These are not negotiable.
 5. **Reproducibility.** Every computation cited in a result is a versioned deterministic
    script with a test. Nothing is accepted on the strength of "I ran it in the REPL".
 
-6. **Failures are data.** Every abandoned line of attack goes into `results/FRACASSOS.md`
+6. **Failures are data.** Every abandoned line of attack goes into `results/FAILURES.md`
    with the precise reason it failed.
 
 7. **Divergence is a finding.** When computation contradicts the literature it is
@@ -81,6 +82,9 @@ These are not negotiable.
 
 8. **Re-read as an enemy.** Before labelling any proof, read it again looking for the
    error rather than for the confirmation.
+
+9. **English throughout.** Code, comments, reports, notes and commit messages are written
+   in English.
 
 ## Roadmap
 
@@ -113,9 +117,12 @@ Each phase ends with a report and a commit before the next one opens.
 core/         verified utilities (exact arithmetic; everything covered by tests)
 tests/        pytest — must be green before any commit
 experiments/  search and exploration scripts (reproducible, each with --help)
-results/      RESULTADOS.md (labelled statements), FASE_N.md (reports), FRACASSOS.md
+results/      RESULTS.md (labelled statements), PHASE_N.md (reports), ERRATA.md, FAILURES.md
+literature/   PAPERS.md plus one reading note per paper, theorems stated verbatim
+publication/  manuscripts derived from results/ (currently the corrigenda note)
 ```
 
-Reports in `results/` are written in Portuguese; they
-are being migrated to English. The labels themselves stay in their original form so that
-older reports remain searchable.
+The code base still uses its original Portuguese identifiers and prints the labels in
+their original form (`[PROVADO]`, `[PROVADO-CONDICIONAL: …]`, `[VERIFICADO-NUMERICAMENTE: …]`);
+their meaning is the one above. Renaming the code is scheduled as a separate,
+test-guarded refactor so that the certified engines are not touched casually.

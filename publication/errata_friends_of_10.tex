@@ -1,0 +1,385 @@
+% ---------------------------------------------------------------------------
+% Corrigenda note -- friends of 10 and 20.
+% Compile: pdflatex errata_friends_of_10.tex  (twice)
+% All numerical claims are reproduced by experiments/verifica_erratas.py
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\Iab}{I}
+\DeclareMathOperator{\lcm}{lcm}
+
+\title{Corrigenda and remarks on some recent results\\ concerning friends of $10$ and $20$}
+
+\author{Caio Comitre Rossi\thanks{Independent researcher. E-mail:
+\texttt{kio199@gmail.com}. Verification code:
+\url{https://github.com/caioross/solitary10} (see the note in Section~\ref{sec:verif}).}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We record four corrections to recent work on the open problem of whether $10$ is a
+solitary number. (i) A combinatorial lemma on partitions used in
+\cite{CMM10} (Lemma 2.3) and in \cite{CMM20} (Lemma 23) is false as stated: the
+inequality is strict there, while equality holds for the all-ones partition; we give
+the corrected statement together with its equality case, and observe that the lemmas
+deduced from it (\cite[Lemma 3.6]{CMM10}, \cite[Lemma 24]{CMM20}) are true as stated
+but require the corrected version, since their minima are \emph{attained} exactly in
+the equality case. (ii) The two inequalities displayed in \cite[Remark 3.7]{CMM10}
+are off by one: what follows from \cite[Theorem 1.10]{CMM10} is
+$\Omega(m)\ge\omega(N)+2a-2$ and $\Omega(m)\ge\omega(m)+2a-1$; consequently
+\cite[Corollary 1.11]{CMM10} should read $N<5\cdot 6^{(2^{K-2a+2}-1)^{2}}$. We also
+show that the counting argument proving \cite[Theorem 1.10]{CMM10} is optimal, so the
+missing unit cannot be recovered from that argument. (iii) The main theorem of
+\cite{M10} yields upper bounds for the $r$-th smallest prime divisor of a friend of
+$10$ only for $2\le r\le 5$, and not for every prime divisor as the title and
+abstract state: the admissibility threshold in its hypothesis becomes negative
+exactly at $r=6$. We make the effective range explicit and record the bound for
+$q_{5}$, which is available in \cite{M10} but not stated there. (iv) A misprinted
+abundancy factor in Case 12 of the proof of \cite[Theorem 1.2]{CMM10}. None of the
+main theorems of \cite{CMM10,CMM20,M10} is affected. All computations reported here
+are exact rational computations and are reproducible from the code cited in
+Section~\ref{sec:verif}.
+\end{abstract}
+
+\section{Notation and scope}
+
+For $n\in\ZZ^{+}$ let $\sigma(n)$ denote the sum of the positive divisors of $n$ and
+$\Iab(n)=\sigma(n)/n$ the abundancy index of $n$; $\omega(n)$ and $\Omega(n)$ denote
+the number of distinct prime divisors of $n$ and the number of prime divisors counted
+with multiplicity, respectively, and $v_{q}(n)$ is the $q$-adic valuation of $n$. A
+positive integer $n\ne 10$ is a \emph{friend of $10$} if $\Iab(n)=\Iab(10)=9/5$;
+friends of $20$ are defined analogously with $\Iab(20)=21/10$. Whether $10$ (or $20$)
+has a friend is open; see \cite{Ward,Thackeray,MM,CMM10,CMM20,M10}.
+
+Throughout, $p_{i}$ denotes the $i$-th prime ($p_{1}=2$), and $q_{r}$ denotes the
+$r$-th smallest prime divisor of the hypothetical friend under consideration.
+
+Two remarks on the logical status of what follows. First, since no friend of $10$ is
+known, a statement of the form ``if $N$ is a friend of $10$ then $P(N)$'' cannot be
+refuted by exhibiting a counterexample; accordingly, except in
+Section~\ref{sec:partition} --- where the statement in question is a self-contained
+assertion about partitions and is genuinely false --- we do \emph{not} claim that the
+statements we discuss are false. We claim that the arguments given do not establish
+them, and we state what the arguments do establish. Second, the four items below are
+local; the main results of \cite{CMM10,CMM20,M10}, in particular $\omega(N)\ge 7$
+for a friend $N$ of $10$ \cite[Theorem 1.2]{CMM10}, are untouched, as are the bounds
+of \cite{MM} and the bound $\omega(N)\ge 10$ of \cite{Thackeray}.
+
+\section{A partition lemma}\label{sec:partition}
+
+The following statement appears as \cite[Lemma 2.3]{CMM10} and, verbatim, as
+\cite[Lemma 23]{CMM20}.
+
+\begin{lemma}[as stated in {\cite[Lemma 2.3]{CMM10}}, {\cite[Lemma 23]{CMM20}}]
+\label{lem:orig}
+Let $(c_{1},\dots,c_{k})$ be any partition of $n$, i.e.\ $\sum_{i=1}^{k}c_{i}=n$ with
+$1\le k\le n$ and all $c_{i}\in\NN$. Then for any integer $a>e$,
+\[
+  a\,n<\sum_{i=1}^{k}a^{c_{i}}.
+\]
+\end{lemma}
+
+This is false. The proof deduces $ac_{i}<a^{c_{i}}$ for every $c_{i}\ge 1$ from the
+fact that $\psi(x)=ax-a^{x}$ is strictly decreasing on $[1,\infty)$ for $a>e$
+(\cite[Lemma 2.2]{CMM10}, \cite[Lemma 22]{CMM20}); but $\psi(1)=0$, so strict
+decrease gives $ac<a^{c}$ only for $c>1$, with equality at $c=1$. Taking the all-ones
+partition $c_{1}=\dots=c_{n}=1$ (so $k=n$) yields
+\[
+  \sum_{i=1}^{n}a^{c_{i}}=na=a\,n ,
+\]
+so the asserted strict inequality fails for every $n\ge 1$ and every integer $a>e$;
+the smallest instance is $n=1$, $a=3$. The correct statement is the following.
+
+\begin{lemma}\label{lem:fix}
+Let $(c_{1},\dots,c_{k})$ be a partition of $n$ and let $a>e$ be an integer. Then
+\[
+  a\,n\le\sum_{i=1}^{k}a^{c_{i}},
+\]
+with equality if and only if $c_{i}=1$ for all $i$.
+\end{lemma}
+
+\begin{proof}
+With $\psi(x)=ax-a^{x}$ we have $\psi'(x)=a-a^{x}\log a<0$ on $[1,\infty)$ for $a>e$,
+hence $\psi(x)\le\psi(1)=0$ on $[1,\infty)$ with equality only at $x=1$; that is,
+$ac\le a^{c}$ for every integer $c\ge 1$, with equality if and only if $c=1$. Summing
+over $i$ gives $an=a\sum_{i}c_{i}\le\sum_{i}a^{c_{i}}$, and equality holds if and
+only if it holds termwise, i.e.\ if and only if every $c_{i}$ equals $1$.
+\end{proof}
+
+The lemma is used, in both papers, only through the following consequence. Recall
+from \cite{CMM10,CMM20} the sets
+\[
+  \mathcal{A}_{n,a}(r):=\Bigl\{\sum_{i=1}^{r}a^{c_{i}}-r\ :\
+    \sum_{i=1}^{r}c_{i}=n,\ c_{i}\in\NN\Bigr\},
+  \qquad
+  \mathcal{L}_{n,a}:=\bigcup_{r=1}^{n}\mathcal{A}_{n,a}(r).
+\]
+
+\begin{lemma}[{\cite[Lemma 3.6]{CMM10}}, {\cite[Lemma 24]{CMM20}}]\label{lem:min}
+The minimum element of $\mathcal{L}_{2a-1,5}$ is $8a-4$.
+\end{lemma}
+
+The \emph{statement} is correct, but the proof given is not, and the defect is
+visible inside the papers themselves: the proof concludes with the strict inequality
+$4(2a-1)<\sum_{i}5^{c_{i}}-k$, which asserts that $8a-4$ is a strict lower bound and
+therefore \emph{not} a minimum, while the note immediately following the proof states
+correctly that the minimum lies in $\mathcal{A}_{2a-1,5}(2a-1)$, i.e.\ that it is
+attained at the all-ones partition. Lemma~\ref{lem:fix} repairs this at once: for a
+partition of $n=2a-1$ into $k\le 2a-1$ parts,
+\[
+  \sum_{i=1}^{k}5^{c_{i}}-k\ \ge\ 5(2a-1)-(2a-1)\ =\ 4(2a-1)\ =\ 8a-4 ,
+\]
+with equality exactly for $k=2a-1$ and all $c_{i}=1$. Hence the minimum is $8a-4$ and
+it is attained. Nothing further in \cite{CMM10,CMM20} changes.
+
+\section{An off-by-one in \cite[Remark 3.7]{CMM10} and its effect on
+\cite[Corollary 1.11]{CMM10}}\label{sec:offbyone}
+
+Let $N=5^{2a}m^{2}$ be a friend of $10$, so that $5^{2a}\,\|\,N$ and $5\nmid m$; in
+particular $\omega(N)=\omega(m)+1$. \cite[Theorem 1.10]{CMM10} states
+\begin{equation}\label{eq:110}
+  \Omega(N)\ \ge\ 2\omega(N)+6a-4 ,
+\end{equation}
+and its proof is correct once Lemma~\ref{lem:min} is proved as above.
+\cite[Remark 3.7]{CMM10} then displays
+\[
+  \Omega(5^{2a})+\Omega(m^{2})=2a+2\Omega(m)\ \ge\ 2\omega(N)+6a-4
+\]
+and concludes
+\begin{equation}\label{eq:7}
+  \Omega(m)\ \ge\ \omega(N)+2a-1 \tag{7}
+\end{equation}
+and, from \eqref{eq:7},
+\begin{equation}\label{eq:8}
+  \Omega(m)\ \ge\ \omega(m)+2a. \tag{8}
+\end{equation}
+The displayed inequality gives $2\Omega(m)\ge 2\omega(N)+4a-4$, i.e.
+\begin{equation}\label{eq:7fix}
+  \Omega(m)\ \ge\ \omega(N)+2a-2 ,\tag{7$'$}
+\end{equation}
+which is one unit weaker than \eqref{eq:7}. No parity gain is available: both sides
+of $2a+2\Omega(m)\ge 2\omega(N)+6a-4$ are even, so \eqref{eq:7fix} is exactly the
+integer consequence of \eqref{eq:110}. Substituting $\omega(N)=\omega(m)+1$ in
+\eqref{eq:7fix} gives
+\begin{equation}\label{eq:8fix}
+  \Omega(m)\ \ge\ \omega(m)+2a-1 ,\tag{8$'$}
+\end{equation}
+again one unit weaker than \eqref{eq:8}. Since \cite[Corollary 1.11]{CMM10} is
+obtained by feeding $\Omega(m)\le K$ into \eqref{eq:7}, its proof yields
+$\omega(N)\le K-2a+2$ rather than $\omega(N)\le K-2a+1$, and therefore, by
+Nielsen's bound \cite[Lemma 2.5]{CMM10} for odd $9/5$-perfect numbers:
+
+\begin{corollary}[corrected form of {\cite[Corollary 1.11]{CMM10}}]\label{cor:111}
+If $N=5^{2a}m^{2}$ is a friend of $10$ with $a,m\in\NN$ and $\Omega(m)\le K$, then
+\[
+  N<5\cdot 6^{\left(2^{\,\omega(N)}-1\right)^{2}}
+   <5\cdot 6^{\left(2^{\,K-2a+2}-1\right)^{2}} .
+\]
+\end{corollary}
+
+The corrected statement of \cite[Corollary 1.11]{CMM10} is quoted, in its original
+form, in \cite[\S1]{M20div}; the same replacement applies there.
+
+It is natural to ask whether \eqref{eq:7} can be recovered by strengthening
+\eqref{eq:110} to $\Omega(N)\ge 2\omega(N)+6a-2$ (the least improvement compatible
+with the parity of $\Omega(N)=2a+2\Omega(m)$). The counting used in \cite{CMM10} does
+not allow it, and this is not a matter of a lossy estimate: it is exactly optimal.
+
+\begin{proposition}\label{prop:tight}
+Fix $a\ge 1$ and $s\ge 2a$. Consider the constraints used in the proof of
+\cite[Theorem 1.10]{CMM10} for $N=5^{2a}\prod_{i=1}^{s-1}p_{i}^{2\gamma_{i}}$ with
+$\omega(N)=s$, namely: there is a set $T\subseteq\{1,\dots,s-1\}$, $|T|=t\ge 1$, and
+integers $v_{i}\ge 1$ $(i\in T)$ with $\sum_{i\in T}v_{i}=2a-1$, such that
+$2\gamma_{i}+1\equiv 0\pmod{5^{v_{i}}}$ for $i\in T$ --- whence
+$2\gamma_{i}\ge 5^{v_{i}}-1$ --- and $2\gamma_{i}\ge 2$ for $i\notin T$. Then
+\[
+  \min\ \Omega(N)\;=\;2a+\sum_{i\in T}2\gamma_{i}+\sum_{i\notin T}2\gamma_{i}
+  \;=\;2s+6a-4 ,
+\]
+the minimum being attained by $t=2a-1$, $v_{i}=1$ and $2\gamma_{i}=4$ for $i\in T$,
+and $2\gamma_{i}=2$ for the remaining $s-2a$ primes.
+\end{proposition}
+
+\begin{proof}
+Under the stated constraints,
+\[
+  \Omega(N)\ \ge\ 2a+\sum_{i\in T}\bigl(5^{v_{i}}-1\bigr)+2(s-1-t)
+  \ =\ 2(s-1)+2a+\sum_{i\in T}\bigl(5^{v_{i}}-3\bigr).
+\]
+For every integer $v\ge 1$ one has $5^{v}-3\ge 2v$, with equality if and only if
+$v=1$ (indeed $5^{1}-3=2$, and $5^{v}\ge 2v+3$ is immediate for $v\ge 2$). Hence
+\[
+  \sum_{i\in T}\bigl(5^{v_{i}}-3\bigr)\ \ge\ 2\sum_{i\in T}v_{i}\ =\ 2(2a-1)\ =\ 4a-2 ,
+\]
+with equality if and only if $t=2a-1$ and $v_{i}=1$ for all $i\in T$. This gives
+$\Omega(N)\ge 2(s-1)+2a+4a-2=2s+6a-4$. The displayed configuration satisfies every
+constraint (each $i\in T$ has $2\gamma_{i}=4$, so $2\gamma_{i}+1=5\equiv 0
+\pmod{5}$) and attains the bound, and it requires $t=2a-1\le s-1$, i.e.\ $s\ge 2a$.
+\end{proof}
+
+Consequently \eqref{eq:110} is the exact optimum of the relaxation used to prove it,
+and \eqref{eq:7} does not follow from \cite[Theorem 1.10]{CMM10}; whether \eqref{eq:7}
+is true is left open here. We note that the analogous passage in the companion
+paper \cite{CMM20} is carried out correctly: there
+$\Omega(N)\ge 2\omega(N)+6a-5$ with $N=2\cdot 5^{2a}m^{2}$ gives
+$1+2a+2\Omega(m)\ge 2\omega(N)+6a-5$, hence $\Omega(m)\ge\omega(N)+2a-3$, which is
+the exact integer consequence.
+
+\section{The effective range of \cite[Theorem 1.2]{M10}}\label{sec:range}
+
+\cite[Theorem 1.2]{M10} states: if $n$ is a friend of $10$ and $q_{r}$ ($r\ge 2$) is
+its $r$-th smallest prime divisor, then $q_{r}<L\{\log L+2\log(\log L)\}$, where
+$L=\lceil\mathcal{A}\omega(n)/\mathcal{B}\rceil$ and $\mathcal{A},\mathcal{B}$ are
+coprime positive integers with $\mathcal{A}/\mathcal{B}\in\QQ^{+}\setminus\ZZ^{+}$,
+$\mathcal{A}\mathcal{B}(r-2)+2\mathcal{A}+\mathcal{B}>\mathcal{B}^{2}$ and
+\begin{equation}\label{eq:cond1}
+  \frac{\mathcal{A}}{\mathcal{B}}\;>\;
+  \frac{1}{\;\frac{36}{25}\prod_{4\le i\le r+1}\bigl(1-\frac1{p_{i}}\bigr)-1\;} .
+\end{equation}
+Write
+\[
+  X_{r}:=\frac{36}{25}\prod_{4\le i\le r+1}\Bigl(1-\frac1{p_{i}}\Bigr),
+  \qquad
+  F_{r}:=\frac54\prod_{4\le j\le r+1}\frac{p_{j}}{p_{j}-1},
+\]
+the empty products being $1$; thus $F_{r}X_{r}=9/5$ for every $r\ge 2$, and
+\eqref{eq:cond1} reads $\mathcal{A}/\mathcal{B}>1/(X_{r}-1)$. (That this is the
+intended reading is confirmed by the instantiations in \cite{M10}: for $r=2,3,4$ the
+thresholds used there are $25/11$, $175/41$ and $385/47$, which are exactly
+$1/(X_{r}-1)$.)
+
+The final step of the proof in \cite{M10} is
+\[
+  \Iab(n)<F_{r}\Bigl(1+\frac{\mathcal{B}}{\mathcal{A}}\Bigr)
+  <F_{r}X_{r}=\frac95 ,
+\]
+so it requires $1+\mathcal{B}/\mathcal{A}<X_{r}$. Since
+$1+\mathcal{B}/\mathcal{A}>1$ for positive $\mathcal{A},\mathcal{B}$, this is possible
+if and only if $X_{r}>1$. The sequence $(X_{r})_{r\ge 2}$ is strictly decreasing, and
+
+\begin{proposition}\label{prop:Xr}
+$X_{r}>1$ if and only if $2\le r\le 5$. Explicitly,
+\[
+  X_{2}=\tfrac{36}{25},\quad X_{3}=\tfrac{216}{175},\quad
+  X_{4}=\tfrac{432}{385},\quad X_{5}=\tfrac{5184}{5005},\quad
+  X_{6}=\tfrac{82944}{85085}<1 ,
+\]
+and $X_{r}<X_{6}<1$ for $r>6$. Equivalently, $F_{r}\ge 9/5$ for $r\ge 6$.
+\end{proposition}
+
+\begin{proof}
+The displayed values are exact rational evaluations, and $X_{r+1}=X_{r}(1-1/p_{r+2})
+<X_{r}$. The last sentence follows from $F_{r}X_{r}=9/5$.
+\end{proof}
+
+Hence, for $r\ge 6$: under the intended reading of \eqref{eq:cond1} the right-hand
+side is negative and no admissible pair $(\mathcal{A},\mathcal{B})$ of positive
+integers satisfies the hypothesis in the sense required by the proof --- the theorem
+is vacuous; under a literal reading, \eqref{eq:cond1} holds trivially for every
+positive $\mathcal{A}/\mathcal{B}$, but the proof does not support the conclusion,
+since already the constant $F_{r}$ alone satisfies $F_{r}\ge 9/5$ for $r\ge 6$ (for
+instance $F_{6}=17017/9216>9/5$), so no choice of the tail primes can produce the
+required contradiction. In either reading, no bound for $q_{r}$ with $r\ge 6$ is
+obtained. We therefore suggest that the title, the abstract and the statement of
+\cite[Theorem 1.2]{M10} be amended to refer to the $r$-th smallest prime divisor for
+$2\le r\le 5$. Nothing else in \cite{M10} is affected: the alternative proof of
+\cite[Theorem 1.1]{M10} and \cite[Corollary 1.1]{M10} use only $r\in\{2,3,4\}$.
+
+Two further remarks on \cite{M10}. First, the range $2\le r\le 5$ does contain one
+new bound that is not stated in \cite{M10}: for $r=5$ the threshold is
+$1/(X_{5}-1)=5005/179$, so $(\mathcal{A},\mathcal{B})=(113,4)$ is admissible and the
+theorem gives, in the sharper form $q_{r}<p_{L}$ established inside the proof,
+\[
+  q_{5}<p_{\lceil 113\,\omega(n)/4\rceil},
+\]
+in particular $q_{5}<p_{283}=1847$ when $\omega(n)=10$, the current lower bound for
+$\omega(n)$ \cite{Thackeray}. Second, the reference ``From (3) and (4)'' in the last
+display of the proof should be ``From (1) and (4)'', and the inequality
+$\mathcal{A}>\mathcal{B}>1$ invoked in \cite[Remark 1.1]{M10} follows from
+\eqref{eq:cond1} only in the range where $1/(X_{r}-1)>1$, which is again $2\le r\le5$.
+
+\section{A misprint in Case 12 of \cite[Theorem 1.2]{CMM10}}
+
+In Case 12 of the proof of \cite[Theorem 1.2]{CMM10} the chain under consideration is
+$N=5^{2a_{1}}7^{2a_{2}}11^{2a_{3}}13^{2a_{4}}23^{2a_{5}}p_{6}^{2a_{6}}$, but the last
+displayed factor in both abundancy products is $381/361=\Iab(19^{2})$ instead of
+$\Iab(23^{2})=553/529$. With the correct factor the two inequalities still hold:
+\[
+  \Iab(5^{4}7^{2}11^{2}13^{2}23^{2})=\frac{1111642101}{614631875}>\frac95,
+  \qquad
+  \Iab(5^{2}7^{2}11^{2}13^{2}23^{2}31^{2})=\frac{15547332483}{8383578775}>\frac95 ,
+\]
+so the conclusion of Case 12, and hence \cite[Theorem 1.2]{CMM10}, is unaffected.
+
+\section{Verification}\label{sec:verif}
+
+Every numerical assertion above (the counterexamples to Lemma~\ref{lem:orig}; the
+attainment of the minimum in Lemma~\ref{lem:min} for $1\le a\le 7$;
+Proposition~\ref{prop:tight} checked by exhaustive minimisation over all admissible
+configurations for $1\le a\le 6$ and $2a\le s\le 14$; the witnesses showing that
+\eqref{eq:7} does not follow from the displayed inequality; the values of $X_{r}$ and
+$F_{r}$ and the identity $F_{r}X_{r}=9/5$ for $2\le r\le 12$; and the two abundancy
+products of Case 12) is verified by a deterministic script using exact integer and
+rational arithmetic only, with an accompanying test suite. The code is available at
+the repository cited in the author footnote.
+
+\begin{thebibliography}{99}
+
+\bibitem{CMM10} T.~Chatterjee, S.~Mandal and S.~Mandal,
+\emph{A note on necessary conditions for a friend of $10$},
+arXiv:2404.00624v5 (2025).
+
+\bibitem{CMM20} T.~Chatterjee, S.~Mandal and S.~Mandal,
+\emph{On characterizing potential friends of $20$},
+Ann.\ West Univ.\ Timi\c{s}oara --- Math.\ Comput.\ Sci.\ \textbf{61} (2025), no.~1,
+205--229; arXiv:2409.04451v4.
+
+\bibitem{M10} S.~Mandal,
+\emph{Prime divisors of $10$'s friends: a generalization of prior bounds},
+An.\ Univ.\ Oradea Fasc.\ Mat.\ \textbf{33} (2026), no.~1, 5--12; arXiv:2412.02701v4.
+
+\bibitem{M20div} S.~Mandal,
+\emph{Exploring the relationships between the divisors of friends of $10$},
+News Bull.\ Calcutta Math.\ Soc.\ \textbf{48} (2025), no.~1--3, 21--32;
+arXiv:2504.08295v1.
+
+\bibitem{MM} S.~Mandal and S.~Mandal,
+\emph{Upper bounds for the prime divisors of friends of $10$},
+Resonance \textbf{30} (2025), 263--275; arXiv:2404.05771v2.
+
+\bibitem{Nielsen} P.~P.~Nielsen,
+\emph{Odd perfect numbers, Diophantine equations, and upper bounds},
+Math.\ Comp.\ \textbf{84} (2015), 2549--2567.
+
+\bibitem{Thackeray} H.~R.~Thackeray,
+\emph{Each friend of $10$ has at least $10$ nonidentical prime factors},
+Indag.\ Math.\ \textbf{35} (2024), no.~3, 595--607; arXiv:2310.15900.
+
+\bibitem{Ward} J.~Ward,
+\emph{Does ten have a friend?}, Int.\ J.\ Math.\ Comput.\ Sci.\ \textbf{3} (2008),
+no.~3, 153--158; arXiv:0806.1001.
+
+\end{thebibliography}
+
+\end{document}

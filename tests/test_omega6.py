@@ -47,7 +47,7 @@ def test_ramo_ii_so_para_o_alvo_real(monkeypatch):
 
 def test_pinagem_no_prefixo_critico():
     # derivação mecânica esperada para {5,7,11,13,23} (conferida à mão em
-    # results/FASE_1.md, Bloco 2):
+    # results/PHASE_1.md, Bloco 2):
     #  CASO A (11 alimenta o 5): ord_P(11) = 5 => P | Phi_5(11) = 5·3221 => P = 3221
     #  CASO B (só P alimenta): v5cap = 1 => a1 = 2 => sigma(25) = 31 => P = 31
     # ambos os conjuntos completos morrem no fecho, e quem os mata é o primo 7

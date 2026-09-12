@@ -99,7 +99,7 @@ def main() -> None:
               f"N <= 10^{args.log10_bound}.")
         print("Rótulo: [PROVADO-CONDICIONAL: Teoremas A-D e Lemas/Fato 0 da Fase 0 + "
               "omega(N) >= 10 (arXiv:2310.15900) + correção do motor core/motor.py "
-              "(passada adversarial em results/FASE_1.md §1.5) + correção de "
+              "(passada adversarial em results/PHASE_1.md §1.5) + correção de "
               "sympy.nextprime/primerange (cruzada com crivo próprio em "
               "tests/test_motor_crosscheck.py; o fecho ciclotômico NÃO é usado aqui)]")
 

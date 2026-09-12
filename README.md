@@ -41,7 +41,7 @@ polynomials. This project turns those mechanisms into a certifier.
 $N$ denotes a hypothetical friend of 10 and $\omega(N)$ its number of distinct prime
 factors. Labels are explained in [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md); the
 authoritative list, with full hypotheses, is
-[`results/RESULTADOS.md`](results/RESULTADOS.md).
+[`results/RESULTS.md`](results/RESULTS.md).
 
 | | Statement | Label | Relation to the literature |
 |---|---|---|---|
@@ -54,7 +54,7 @@ authoritative list, with full hypotheses, is
 
 Result I is deliberately marked as not yet load-bearing: the recursive certifier that
 produces it has not had its own adversarial pass, and its label says so. The targets
-for that review are listed in [`results/FASE_1.md`](results/FASE_1.md) §4.8.
+for that review are listed in [`results/PHASE_1.md`](results/PHASE_1.md) §4.8 and §6.4.
 
 Nothing above is claimed as a new theorem about 10. What is new is the *machinery*: a
 single exact-arithmetic certifier that reproduces years of hand case analysis in seconds,
@@ -76,8 +76,9 @@ later paper.
 | E5 | arXiv:2412.02701 Thm 1.2 | effective only for the 2nd to 5th smallest prime ($X_6 < 1$); the title and abstract promise all primes | `PROVED` |
 | E6 | arXiv:2404.00624 Thm 1.2, Case 12 | the printed factor $381/361 = I(19^2)$ should be $I(23^2) = 553/529$; the case still closes | `PROVED` |
 
-Catalogue: [`results/ERRATA.md`](results/ERRATA.md). A corrigenda note is being
-prepared for submission.
+Catalogue: [`results/ERRATA.md`](results/ERRATA.md). Manuscript:
+[`publication/errata_friends_of_10.tex`](publication/errata_friends_of_10.tex), with its
+submission notes in [`publication/SUBMISSION_GUIDE.md`](publication/SUBMISSION_GUIDE.md).
 
 ## How the certifiers work
 
@@ -118,14 +119,30 @@ could certify anything.
 
 ### Where the frontier is
 
-$\omega = 9$ does not terminate with the present method, and the obstruction is
-diagnosed rather than guessed: at "almost tight" nodes such as
-$C = \{5, 7, 11, 13, 31, 97, 52361\}$ the product of suprema falls short of $9/5$ by
-$1.8 \cdot 10^{-8}$, so the index bounds the last unknown prime only by about $10^8$
-and the search degenerates into enumeration. The proposed remedy — solving
-$\Phi_\ell(U) = \ell^{\varepsilon} \prod q^{e_q}$ for the last unknown $U$ by exact
-integer roots instead of enumerating primes — is written up in
-[`results/FASE_1.md`](results/FASE_1.md) §4.8 as the next block.
+$\omega = 9$ does not terminate yet, and the obstruction is diagnosed rather than
+guessed. At "almost tight" nodes such as $C = \{5, 7, 11, 13, 31, 97, 52361\}$ the
+product of suprema falls short of $9/5$ by $1.8 \cdot 10^{-8}$, so the index bounds the
+smallest unknown prime only by about $10^8$ and the search degenerates into enumeration
+— the same regime in which Thackeray's SageMath run spent 25 CPU-hours.
+
+Two blocks have been spent on it so far:
+
+- **Cyclotomic equations for the last unknown.** With one unknown $U$ left, some prime
+  $\ell \mid a_U + 1$ has a witness among the known primes, and
+  $\Phi_\ell(U) = \ell^{\varepsilon} \prod_{q \in C_\ell} q^{e_q}$ has a finite right-hand
+  side; $U$ is recovered by an exact integer root instead of enumerating primes. Verified
+  against independent brute force; it cut the $\omega = 8$ tree from 210 456 to 90 032
+  nodes (36 s) with the same verdict. It moves the wall to nodes with **two** unknowns:
+  a 12-hour run of $\omega = 9$ (196 million nodes) did not finish, and certifies nothing.
+- **Thackeray's Corollary 6 and Proposition 9** (a finite bound on the exponent of a
+  known prime, with Wieferich levels computed through the subgroup of order $r-1$ of
+  $(\mathbb{Z}/r^a)^\times$) re-derived and implemented with tests against brute force.
+  An unsafe bound on the unknowns was caught by a test that compares it with the real
+  index loop; in its sound form the bound never fires for $\omega \le 8$ — an honest
+  negative result, recorded in [`results/FAILURES.md`](results/FAILURES.md).
+
+The diagnosis of *why* the index degenerates, and the node split that should break it,
+are written up in [`results/PHASE_1.md`](results/PHASE_1.md) §6.3 as the next block.
 
 ## Reproducing
 
@@ -133,7 +150,7 @@ integer roots instead of enumerating primes — is written up in
 python -m venv venv
 venv/Scripts/activate            # Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
-pytest -q                        # 107 tests, about 25 s
+pytest -q                        # 115 tests, about 25 s
 ```
 
 | Command | Certifies | Time |
@@ -145,7 +162,7 @@ pytest -q                        # 107 tests, about 25 s
 | `python experiments/cota_certificada.py --log10-bound 30` | no friend up to $10^{30}$ | ≈ 10 s (≈ 100 s for $10^{31}$) |
 | `python experiments/shards_10e32.py` | G: the $10^{32}$ sweep as a verified partition of shards | tens of minutes |
 | `python experiments/elimina_omega6.py` | H: $\omega \ge 7$ by divisibility chains | 0.1 s |
-| `python experiments/elimina_omega_k.py --k-max 8` | I: $\omega \ge 9$ by the recursive certifier | ≈ 75 s |
+| `python experiments/elimina_omega_k.py --k-max 8` | I: $\omega \ge 9$ by the recursive certifier | ≈ 1 min |
 | `python experiments/verifica_erratas.py` | the six corrigenda | seconds |
 
 Every command prints its result together with the full conditional label it is entitled
@@ -161,15 +178,18 @@ core/          exact-arithmetic primitives and the three certifiers
                  abundancy.py   σ, I, friend test           motor.py    index-pruned tree search
                  cadeias.py     valuations by orders        omega6.py   ω = 6 by chains and pinning
                  omega_k.py     recursive certifier for any ω
-tests/         107 tests: independent re-implementations, planted targets, frozen counts
+tests/         115 tests: independent re-implementations, planted targets, frozen counts
 experiments/   reproducible command-line scripts (each takes --help)
-results/       RESULTADOS.md (labelled statements) · FASE_0.md, FASE_1.md (phase reports)
-               ERRATA.md (corrigenda catalogue) · FRACASSOS.md (abandoned attacks, with reasons)
+results/       RESULTS.md (labelled statements) · PHASE_0.md, PHASE_1.md (phase reports)
+               ERRATA.md (corrigenda catalogue) · FAILURES.md (abandoned attacks, with reasons)
+literature/    one full-text reading note per paper, theorems stated verbatim
+publication/   the corrigenda manuscript and its submission notes
 docs/          research protocol and labelling rules
 ```
 
-Reports are written in Portuguese; the code and the protocol are in English. Migration
-of the reports is in progress.
+The code base still carries its original Portuguese identifiers and prints labels in
+their original form (`[PROVADO-CONDICIONAL: …]` = `PROVED-CONDITIONAL`); renaming it is
+a separate, test-guarded refactor.
 
 ## Method
 
@@ -182,6 +202,9 @@ abandoned attacks are logged with the precise reason; and a divergence from the
 literature is a finding to be reported, never a discrepancy to be smoothed over.
 
 ## References
+
+Full list, with links and the exact versions consulted, in
+[`literature/PAPERS.md`](literature/PAPERS.md).
 
 - J. Ward, *Does Ten Have a Friend?*, Int. J. Math. Comput. Sci. 3(3), 153–158 (2008). arXiv:0806.1001
 - H. R. Thackeray, *Each friend of 10 has at least 10 nonidentical prime factors*, Indag. Math. 35(3), 595–607 (2024). arXiv:2310.15900 — the current record

@@ -1,6 +1,6 @@
 """Limite inferior exato para um amigo N de 10, a partir das restrições da Fase 0.
 
-Restrições usadas (com seus rótulos — ver results/FASE_0.md):
+Restrições usadas (com seus rótulos — ver results/PHASE_0.md):
   [PROVADO]             N é ímpar, quadrado perfeito, 25 | N, menor primo divisor = 5.
                         (Teoremas A-D da Fase 0; logo todo primo de N é >= 5 e todo
                         expoente é par >= 2.)

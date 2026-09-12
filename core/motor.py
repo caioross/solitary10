@@ -1,6 +1,6 @@
 """Motor de busca em árvore sobre assinaturas de primos, com poda por racionais exatos.
 
-Contexto (results/FASE_0.md): um amigo N de 10 satisfaz 5·σ(N) = 9·N, é quadrado
+Contexto (results/PHASE_0.md): um amigo N de 10 satisfaz 5·σ(N) = 9·N, é quadrado
 ímpar, todo primo divisor é >= 5 com 5 | N (Teoremas A-D, [PROVADO]), logo
 N = ∏ p_i^{a_i} com 5 = p_1 < p_2 < ... < p_k e todo a_i PAR >= 2.
 

@@ -1,165 +1,166 @@
-# ERRATA — defeitos verificados na literatura de amigos de 10 e 20
+# ERRATA — verified defects in the literature on friends of 10 and 20
 
-Catálogo dos defeitos encontrados na literatura, **re-verificados do zero em
-2026-08-21** (segunda passada, independente da Fase 0) diretamente sobre o texto
-publicado, e certificados por `experiments/verifica_erratas.py` + `tests/test_erratas.py`.
+Catalogue of the defects found in the literature, **re-verified from scratch on
+2026-08-21** (second pass, independent of Phase 0) directly against the published
+text, and certified by `experiments/verifica_erratas.py` + `tests/test_erratas.py`.
 
-Material de publicação: `publicacao/errata_friends_of_10.tex` (nota em inglês) e
-`publicacao/GUIA_PUBLICACAO.md` (procedimento).
+Publication material: `publication/errata_friends_of_10.tex` (the note) and
+`publication/SUBMISSION_GUIDE.md` (procedure).
 
-## Fontes exatas conferidas nesta passada
+## Exact sources checked in this pass
 
-| Sigla | Paper | Versão lida | Status editorial |
+| Tag | Paper | Version read | Editorial status |
 |---|---|---|---|
-| P1 | Chatterjee, S. Mandal, S. Mandal, *A note on necessary conditions for a friend of 10* | arXiv:2404.00624**v5** (17/jan/2025), HTML LaTeXML | **preprint** (sem journal-ref no arXiv em 2026-08-21) |
-| P2 | idem, *On Characterizing Potential Friends of 20* | arXiv:2409.04451**v4** | **publicado**: Ann. West Univ. Timisoara — Math. Comput. Sci. 61(1) (2025) 205–229 |
-| P3 | S. Mandal, *Prime Divisors of 10's Friends: A Generalization of Prior Bounds* | arXiv:2412.02701**v4** (16/out/2025) | **publicado**: Analele Univ. Oradea Fasc. Mat. 33(1) (2026) 5–12 |
-| P4 | S. Mandal, *Exploring the Relationships Between the Divisors of Friends of 10* | arXiv:2504.08295v1 | publicado: News Bull. Calcutta Math. Soc. 48(1–3) (2025) 21–32 — **herda** o defeito E4 (cita o Cor. 1.11 na forma original) |
+| P1 | Chatterjee, S. Mandal, S. Mandal, *A note on necessary conditions for a friend of 10* | arXiv:2404.00624**v5** (17 Jan 2025), LaTeXML HTML | **preprint** (no journal-ref on arXiv as of 2026-08-21) |
+| P2 | idem, *On Characterizing Potential Friends of 20* | arXiv:2409.04451**v4** | **published**: Ann. West Univ. Timisoara — Math. Comput. Sci. 61(1) (2025) 205–229 |
+| P3 | S. Mandal, *Prime Divisors of 10's Friends: A Generalization of Prior Bounds* | arXiv:2412.02701**v4** (16 Oct 2025) | **published**: Analele Univ. Oradea Fasc. Mat. 33(1) (2026) 5–12 |
+| P4 | S. Mandal, *Exploring the Relationships Between the Divisors of Friends of 10* | arXiv:2504.08295v1 | published: News Bull. Calcutta Math. Soc. 48(1–3) (2025) 21–32 — **inherits** defect E4 (cites Cor. 1.11 in its original form) |
 
-Método desta re-verificação: download do HTML do arXiv, extração do LaTeX via
-atributos `alttext` (conferência caractere a caractere dos enunciados citados) e
-recomputação de toda aritmética com `int`/`Fraction`. Nenhum float sustenta afirmação.
-
----
-
-## E1 — [P1] Lema 2.3 = [P2] Lema 23: **falso como enunciado** `[PROVADO]`
-
-**Texto do paper (verbatim):** "Let (c₁,…,c_k) be any partition of n … then for any
-integer a > e we have `an < Σ a^{c_i}`", com o passo (1) da prova "`ac_i < a^{c_i}`
-para cada c_i ≥ 1".
-
-**Defeito:** ψ(x) = ax − a^x é estritamente decrescente em [1,∞) para a > e, mas
-ψ(1) = 0 — logo `ac ≤ a^c` com **igualdade** em c = 1. Na partição toda de 1's vale
-`a·n = Σ a^{c_i}`. Menor contraexemplo: n = 1, a = 3 (3 = 3).
-
-**Correção:** `a·n ≤ Σ a^{c_i}`, com igualdade **sse** todo c_i = 1.
-
-**Consequência:** nenhuma nos resultados finais. O Lema 3.6 [P1] / Lema 24 [P2]
-("mínimo de L_{2a−1,5} é 8a−4") tem **enunciado correto**, mas a prova exibida conclui
-desigualdade **estrita** — o que negaria que o mínimo seja atingido. Os próprios papers
-registram, na nota logo após a prova, que o mínimo está em A_{2a−1,5}(2a−1), isto é,
-exatamente no caso de igualdade: **contradição interna ao texto**, resolvida pela
-versão corrigida do lema.
-
-**Certificado:** `verifica_erratas.py --bloco e1` (396 partições, 3 ≤ a ≤ 8, n ≤ 8:
-todas as violações da forma estrita são igualdades e todas na partição (1,…,1)) e
-`--bloco e2` (mínimo 8a−4 atingido, a = 1..7).
+Method of this re-verification: download of the arXiv HTML, extraction of the LaTeX
+from the `alttext` attributes (character-by-character check of the cited statements)
+and recomputation of all arithmetic with `int`/`Fraction`. No float supports any claim.
 
 ---
 
-## E2 — [P1] Remark 3.7, eqs. (7) e (8): **off-by-one** `[PROVADO]`
+## E1 — [P1] Lemma 2.3 = [P2] Lemma 23: **false as stated** `[PROVED]`
 
-**Texto do paper (verbatim):** "Since Ω(N) ≥ 2ω(N)+6a−4, … Ω(5^{2a}) + Ω(m²) =
-2a + 2Ω(m) ≥ 2ω(N) + 6a − 4 i.e; **Ω(m) ≥ ω(N) + 2a − 1** (7)"; e daí
+**Paper's text (verbatim):** "Let (c₁,…,c_k) be any partition of n … then for any
+integer a > e we have `an < Σ a^{c_i}`", with step (1) of the proof "`ac_i < a^{c_i}`
+for each c_i ≥ 1".
+
+**Defect:** ψ(x) = ax − a^x is strictly decreasing on [1,∞) for a > e, but
+ψ(1) = 0 — hence `ac ≤ a^c` with **equality** at c = 1. For the all-ones partition
+`a·n = Σ a^{c_i}` holds. Smallest counterexample: n = 1, a = 3 (3 = 3).
+
+**Correction:** `a·n ≤ Σ a^{c_i}`, with equality **iff** every c_i = 1.
+
+**Consequence:** none for the final results. Lemma 3.6 [P1] / Lemma 24 [P2]
+("the minimum of L_{2a−1,5} is 8a−4") has a **correct statement**, but the displayed
+proof concludes a **strict** inequality — which would deny that the minimum is attained.
+The papers themselves record, in the note right after the proof, that the minimum lies
+in A_{2a−1,5}(2a−1), that is, exactly in the equality case: an **internal contradiction
+in the text**, resolved by the corrected version of the lemma.
+
+**Certificate:** `verifica_erratas.py --bloco e1` (396 partitions, 3 ≤ a ≤ 8, n ≤ 8:
+every violation of the strict form is an equality and all occur at the partition (1,…,1))
+and `--bloco e2` (minimum 8a−4 attained, a = 1..7).
+
+---
+
+## E2 — [P1] Remark 3.7, eqs. (7) and (8): **off-by-one** `[PROVED]`
+
+**Paper's text (verbatim):** "Since Ω(N) ≥ 2ω(N)+6a−4, … Ω(5^{2a}) + Ω(m²) =
+2a + 2Ω(m) ≥ 2ω(N) + 6a − 4 i.e; **Ω(m) ≥ ω(N) + 2a − 1** (7)"; and from there
 "**Ω(m) ≥ ω(m) + 2a** (8)".
 
-**Defeito:** da linha exibida segue 2Ω(m) ≥ 2ω(N) + 4a − 4, ou seja
-**Ω(m) ≥ ω(N) + 2a − 2**. Ambos os lados são pares — não há ganho de paridade a
-extrair. Como 5^{2a} ‖ N implica 5 ∤ m e ω(N) = ω(m) + 1, a forma correta de (8) é
+**Defect:** from the displayed line follows 2Ω(m) ≥ 2ω(N) + 4a − 4, that is
+**Ω(m) ≥ ω(N) + 2a − 2**. Both sides are even — there is no parity gain to extract.
+Since 5^{2a} ‖ N implies 5 ∤ m and ω(N) = ω(m) + 1, the correct form of (8) is
 **Ω(m) ≥ ω(m) + 2a − 1**.
 
-**A lacuna não é fechável pelo argumento do próprio paper:** para obter (7) seria
-preciso Ω(N) ≥ 2ω(N) + 6a − 2, mas o valor 2ω(N) + 6a − 4 é o **ótimo exato** da
-relaxação usada na prova do Teorema 1.10 (Proposição em `publicacao/`): a configuração
-com 2a−1 primos ≡ 1 (mod 10) de expoente 4 e os demais de expoente 2 satisfaz todas as
-restrições empregadas e atinge o limite. Se (7) é verdadeira, exige argumento novo.
+**The gap cannot be closed by the paper's own argument:** to obtain (7) one would need
+Ω(N) ≥ 2ω(N) + 6a − 2, but the value 2ω(N) + 6a − 4 is the **exact optimum** of the
+relaxation used in the proof of Theorem 1.10 (Proposition in `publication/`): the
+configuration with 2a−1 primes ≡ 1 (mod 10) of exponent 4 and all others of exponent 2
+satisfies every constraint employed and attains the bound. If (7) is true, it requires
+a new argument.
 
-**Evidência de que é deslize isolado:** em [P2] (amigos de 20) a passagem análoga está
-**correta**: de Ω(N) ≥ 2ω(N)+6a−5 com N = 2·5^{2a}m² sai 1 + 2a + 2Ω(m) ≥ 2ω(N)+6a−5,
-logo Ω(m) ≥ ω(N) + 2a − 3 — exatamente a consequência inteira.
+**Evidence that it is an isolated slip:** in [P2] (friends of 20) the analogous passage
+is **correct**: from Ω(N) ≥ 2ω(N)+6a−5 with N = 2·5^{2a}m² comes 1 + 2a + 2Ω(m) ≥ 2ω(N)+6a−5,
+hence Ω(m) ≥ ω(N) + 2a − 3 — exactly the integer consequence.
 
-**Certificado:** `verifica_erratas.py --bloco e3` (ótimo da relaxação = 2ω+6a−4 em 48
-pares (a, ω)) e `--bloco e4` (152 testemunhas inteiras que satisfazem a desigualdade
-exibida e violam a eq. (7)).
+**Certificate:** `verifica_erratas.py --bloco e3` (optimum of the relaxation = 2ω+6a−4
+over 48 pairs (a, ω)) and `--bloco e4` (152 integer witnesses satisfying the displayed
+inequality and violating eq. (7)).
 
 ---
 
-## E3 — [P1] Corolário 1.11: expoente enfraquece de K−2a+1 para **K−2a+2** `[PROVADO]`
+## E3 — [P1] Corollary 1.11: exponent weakens from K−2a+1 to **K−2a+2** `[PROVED]`
 
-**Texto do paper:** "Since Ω(m) ≤ K, we have from (7) that K − 2a + 1 ≥ ω(N)", donde
+**Paper's text:** "Since Ω(m) ≤ K, we have from (7) that K − 2a + 1 ≥ ω(N)", whence
 `N < 5·6^{(2^{K−2a+1}−1)²}`.
 
-**Correção (consequência direta de E2):** de (7′) sai ω(N) ≤ K − 2a + 2, logo o que a
-prova sustenta é
+**Correction (direct consequence of E2):** from (7′) comes ω(N) ≤ K − 2a + 2, so what
+the proof supports is
 
 > **N < 5·6^{(2^{ω(N)}−1)²} < 5·6^{(2^{K−2a+2}−1)²}.**
 
-**Propagação:** [P4] (arXiv:2504.08295, §1) cita o Corolário 1.11 na forma original —
-mesma substituição se aplica lá.
+**Propagation:** [P4] (arXiv:2504.08295, §1) cites Corollary 1.11 in its original form —
+the same substitution applies there.
 
 ---
 
-## E4 — [P3] Teorema 1.2: efetivo só para **2 ≤ r ≤ 5** `[PROVADO]`
+## E4 — [P3] Theorem 1.2: effective only for **2 ≤ r ≤ 5** `[PROVED]`
 
-**Texto do paper:** título e abstract prometem "upper bounds for **each** of the prime
-divisors of a friend of 10"; o Teorema 1.2 vale sob a condição
+**Paper's text:** title and abstract promise "upper bounds for **each** of the prime
+divisors of a friend of 10"; Theorem 1.2 holds under the condition
 `A/B > 1 / ( (36/25)·∏_{4≤i≤r+1}(1 − 1/p_i) − 1 )`.
 
-**Defeito:** escrevendo X_r = (36/25)·∏_{4≤i≤r+1}(1 − 1/p_i), o passo final da prova
-exige `1 + B/A < X_r`; como `1 + B/A > 1` para A, B > 0, isso só é possível se
-**X_r > 1**. E X_r é estritamente decrescente com
+**Defect:** writing X_r = (36/25)·∏_{4≤i≤r+1}(1 − 1/p_i), the final step of the proof
+requires `1 + B/A < X_r`; since `1 + B/A > 1` for A, B > 0, this is possible only if
+**X_r > 1**. And X_r is strictly decreasing with
 
 | r | 2 | 3 | 4 | 5 | 6 |
 |---|---|---|---|---|---|
 | X_r | 36/25 | 216/175 | 432/385 | 5184/5005 | **82944/85085 < 1** |
 
-Logo, para r ≥ 6: na leitura pretendida (limiar positivo, que é a usada nas próprias
-instanciações do paper — 25/11, 175/41, 385/47 são exatamente 1/(X_r − 1)) **não
-existe par (A,B) admissível**; na leitura literal (limiar negativo ⇒ condição vazia) a
-prova não sustenta a conclusão, pois já a parte fixa F_r = (5/4)·∏_{4≤j≤r+1} p_j/(p_j−1)
-satisfaz F_r ≥ 9/5 para r ≥ 6 (F_6 = 17017/9216 > 9/5) — a contradição não fecha com
-nenhuma escolha de primos da cauda. Em ambas as leituras: **nenhum limite para q_r com
-r ≥ 6**.
+Hence, for r ≥ 6: in the intended reading (positive threshold, which is the one used in
+the paper's own instantiations — 25/11, 175/41, 385/47 are exactly 1/(X_r − 1)) **no
+admissible pair (A,B) exists**; in the literal reading (negative threshold ⇒ empty
+condition) the proof does not support the conclusion, since already the fixed part
+F_r = (5/4)·∏_{4≤j≤r+1} p_j/(p_j−1) satisfies F_r ≥ 9/5 for r ≥ 6 (F_6 = 17017/9216 > 9/5)
+— the contradiction does not close for any choice of tail primes. In both readings:
+**no bound for q_r with r ≥ 6**.
 
-**Correção sugerida:** restringir título/abstract/enunciado a "o r-ésimo menor divisor
-primo, para 2 ≤ r ≤ 5". Nada mais no paper é afetado (Teo. 1.1 e Cor. 1.1 usam r ≤ 4).
+**Suggested correction:** restrict title/abstract/statement to "the r-th smallest prime
+divisor, for 2 ≤ r ≤ 5". Nothing else in the paper is affected (Thm 1.1 and Cor. 1.1 use r ≤ 4).
 
-**Bônus disponível e não enunciado:** para r = 5 o limiar é 5005/179, então
-(A,B) = (113,4) é admissível e a forma afiada da prova dá `q_5 < p_{⌈113·ω(n)/4⌉}`;
-com ω(n) = 10, `q_5 < p_283 = 1847`.
+**Available bonus, not stated:** for r = 5 the threshold is 5005/179, so
+(A,B) = (113,4) is admissible and the sharp form of the proof gives `q_5 < p_{⌈113·ω(n)/4⌉}`;
+with ω(n) = 10, `q_5 < p_283 = 1847`.
 
-**Erratas menores no mesmo paper:** "From (3) and (4)" deveria ser "From (1) and (4)";
-o `A > B > 1` invocado no Remark 1.1 só decorre das hipóteses quando 1/(X_r − 1) > 1,
-isto é, no mesmo intervalo 2 ≤ r ≤ 5.
+**Minor errata in the same paper:** "From (3) and (4)" should read "From (1) and (4)";
+the `A > B > 1` invoked in Remark 1.1 follows from the hypotheses only when 1/(X_r − 1) > 1,
+that is, in the same range 2 ≤ r ≤ 5.
 
-**Certificado:** `verifica_erratas.py --bloco e5` (X_r e F_r exatos para 2 ≤ r ≤ 12,
-identidade F_r·X_r = 9/5, inexistência de (A,B) para r ≥ 6).
-
----
-
-## E5 — [P1] Caso-12 do Teorema 1.2: erro de digitação, sem consequência `[PROVADO]`
-
-A cadeia do Caso-12 é 5, 7, 11, 13, **23**, p₆, mas o último fator impresso nas duas
-desigualdades é 381/361 = I(19²), no lugar de I(23²) = 553/529. Recomputando exato:
-I(5⁴·7²·11²·13²·23²) = 1111642101/614631875 > 9/5 e
-I(5²·7²·11²·13²·23²·31²) = 15547332483/8383578775 > 9/5 — a conclusão do caso
-permanece.
-
-**Certificado:** `verifica_erratas.py --bloco e6`.
+**Certificate:** `verifica_erratas.py --bloco e5` (exact X_r and F_r for 2 ≤ r ≤ 12,
+identity F_r·X_r = 9/5, non-existence of (A,B) for r ≥ 6).
 
 ---
 
-## O que NÃO está em questão
+## E5 — [P1] Case 12 of Theorem 1.2: misprint, no consequence `[PROVED]`
 
-- ω(N) ≥ 7 para amigo de 10 (Teorema 1.2 de [P1]) — intacto.
-- ω(N) ≥ 10 (Thackeray, arXiv:2310.15900) — intacto, e independente de [P1]–[P3].
-- Teorema 1.10 de [P1] (Ω(N) ≥ 2ω(N)+6a−4) — **verdadeiro**; só a prova do lema
-  auxiliar precisa da forma corrigida (E1). É inclusive ótimo (não melhorável pelo
-  argumento).
-- Teoremas 1, 2, 3 de arXiv:2404.05771 (limites para q₂, q₃, q₄) e Cor. 1.1 de [P3] —
-  intactos.
-- Não afirmamos que os enunciados (7), (8), Cor. 1.11 e o Teo. 1.2 de [P3] para r ≥ 6
-  sejam **falsos**: como nenhum amigo de 10 é conhecido, enunciados condicionais desse
-  tipo não podem ser refutados por contraexemplo. O que está provado aqui é que **as
-  provas dadas não os estabelecem** (e, no caso de (7), que o argumento usado não pode
-  estabelecê-los). A única falsidade demonstrada é a do Lema 2.3/23 (E1), que é um
-  enunciado autocontido sobre partições.
+The chain of Case 12 is 5, 7, 11, 13, **23**, p₆, but the last factor printed in the two
+inequalities is 381/361 = I(19²), in place of I(23²) = 553/529. Recomputing exactly:
+I(5⁴·7²·11²·13²·23²) = 1111642101/614631875 > 9/5 and
+I(5²·7²·11²·13²·23²·31²) = 15547332483/8383578775 > 9/5 — the conclusion of the case
+stands.
 
-## Busca de novidade (regra de rigor #4)
+**Certificate:** `verifica_erratas.py --bloco e6`.
 
-Feita em 2026-08-21: arXiv (listagem completa dos papers de Sagar Mandal e do grupo,
-via API), busca web por errata/corrigenda para 2404.00624 e 2412.02701, e verificação
-de que as versões atuais no arXiv (v5 de jan/2025 e v4 de out/2025, respectivamente)
-ainda contêm os defeitos. **Nenhuma errata publicada encontrada.** O paper posterior
-[P4] repete o Corolário 1.11 na forma original, o que indica que o defeito não foi
-notado. Registrar nova busca imediatamente antes de qualquer submissão.
+---
+
+## What is NOT in question
+
+- ω(N) ≥ 7 for a friend of 10 (Theorem 1.2 of [P1]) — intact.
+- ω(N) ≥ 10 (Thackeray, arXiv:2310.15900) — intact, and independent of [P1]–[P3].
+- Theorem 1.10 of [P1] (Ω(N) ≥ 2ω(N)+6a−4) — **true**; only the proof of the auxiliary
+  lemma needs the corrected form (E1). It is in fact optimal (not improvable by the
+  argument).
+- Theorems 1, 2, 3 of arXiv:2404.05771 (bounds for q₂, q₃, q₄) and Cor. 1.1 of [P3] —
+  intact.
+- We do not claim that the statements (7), (8), Cor. 1.11 and Thm 1.2 of [P3] for r ≥ 6
+  are **false**: since no friend of 10 is known, conditional statements of this kind
+  cannot be refuted by counterexample. What is proved here is that **the given proofs do
+  not establish them** (and, in the case of (7), that the argument used cannot establish
+  them). The only demonstrated falsity is that of Lemma 2.3/23 (E1), which is a
+  self-contained statement about partitions.
+
+## Novelty search (rigour rule #4)
+
+Done on 2026-08-21: arXiv (complete listing of the papers of Sagar Mandal and the group,
+via the API), web search for an erratum/corrigendum to 2404.00624 and 2412.02701, and
+verification that the current arXiv versions (v5 of Jan 2025 and v4 of Oct 2025,
+respectively) still contain the defects. **No published erratum found.** The later paper
+[P4] repeats Corollary 1.11 in its original form, which indicates the defect went
+unnoticed. Record a fresh search immediately before any submission.

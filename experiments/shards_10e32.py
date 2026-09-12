@@ -1,7 +1,7 @@
 """Reprodução integral do certificado B = 10^32 por união de shards (Fase 1, Bloco 1).
 
 Executa SEQUENCIALMENTE a mesma partição usada nas execuções paralelas registradas em
-results/FASE_1.md §1.4, e monta o certificado ao final. Antes de rodar, VERIFICA
+results/PHASE_1.md §1.4, e monta o certificado ao final. Antes de rodar, VERIFICA
 programaticamente que a partição cobre o espaço:
   - omega em {10, 11, 12} cobre tudo (k_maximo(10^32) = 13);
   - os intervalos de p2 particionam [7, inf) sem buraco nem sobreposição;
@@ -22,7 +22,7 @@ from experiments.cota_certificada import k_maximo  # noqa: E402
 
 BOUND = 10**32
 
-# partição usada no Bloco 1 (idêntica às execuções registradas em FASE_1.md §1.4)
+# partição usada no Bloco 1 (idêntica às execuções registradas em PHASE_1.md §1.4)
 SHARDS_K10 = [
     [(7, 7), (11, 11)],
     [(7, 7), (13, 13)],
@@ -77,7 +77,7 @@ def main() -> None:
         print(f"!!! AMIGO(S): {amigos} — reverifique com fatoração independente.")
         sys.exit(1)
     print("CERTIFICADO (condicional a omega(N) >= 10): nenhum amigo de 10 com N <= 10^32.")
-    print("Rótulo: como em cota_certificada.py (ver results/FASE_1.md §1.4).")
+    print("Rótulo: como em cota_certificada.py (ver results/PHASE_1.md §1.4).")
 
 
 if __name__ == "__main__":

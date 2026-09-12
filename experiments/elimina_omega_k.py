@@ -3,7 +3,7 @@
 Usa core/omega_k.py (certificador recursivo: particao por orcamentos v5/v3 com a
 cota universal a1 <= 1 + (c5 + s)(c5 + s - 1), fecho dos expoentes comprometidos,
 ramificacao por expoente com cauda, conjuntos completos com um primo grande sem
-fatorar r - 1, indice como fallback). Ver results/FASE_1.md, Blocos 3 e 4.
+fatorar r - 1, indice como fallback). Ver results/PHASE_1.md, Blocos 3 e 4.
 
 Se alguma cobertura nao fechar (NaoCertificavel), NADA e certificado para esse k.
 
@@ -78,7 +78,7 @@ def main() -> None:
               "Zsygmondy, LTE e formula de valuacao de Nielsen/Voight (classicos) + "
               "correcao de core/omega_k.py (certificador recursivo AINDA SEM passada "
               "adversarial propria - nao e load-bearing), core/omega6.py e "
-              "core/cadeias.py (passada adversarial em results/FASE_1.md §2.5) + "
+              "core/cadeias.py (passada adversarial em results/PHASE_1.md §2.5) + "
               "correcao de sympy.n_order/factorint/isprime/nextprime/cyclotomic_poly "
               "nas chamadas consumidas]")
         print("Nota: para omega >= 7 o certificado load-bearing e o do Bloco 2 "

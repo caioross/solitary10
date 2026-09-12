@@ -53,7 +53,7 @@ def test_k7_certificado_pelo_recursivo():
     # exato nas cotas de índice; o resto da árvore fecha com as valuações diretas
     # (sem materializar sigma(p^a) para a ~ 10^11) e a cota universal aplicada
     # também ao a1 comprometido. Contagens congeladas: se mudarem, o relatório
-    # (FASE_1.md, Bloco 4) tem de mudar junto.
+    # (PHASE_1.md, Block 4) tem de mudar junto.
     st = certifica_omega(7)
     assert st.amigos == []
     assert st.assinaturas_testadas == 0

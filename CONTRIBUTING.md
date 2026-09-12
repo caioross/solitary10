@@ -30,7 +30,8 @@ starts taking minutes, that is a bug in the test, not a fact about the problem.
   a correct outcome; silently truncating a sweep is not. Any cap, sample or top-N must
   be logged.
 - **Abandoned attacks are documented.** If a line of attack fails, add an entry to
-  `results/FRACASSOS.md` with the precise reason, before moving on.
+  `results/FAILURES.md` with the precise reason, before moving on.
+- **English throughout.** Code, comments, docstrings, reports and commit messages.
 
 ## Review
 

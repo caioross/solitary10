@@ -1,6 +1,6 @@
 """Certificador: nenhum amigo de 10 com omega(N) = 6 (Fase 1, Bloco 2).
 
-Arquitetura (justificativas completas em results/FASE_1.md, Bloco 2):
+Arquitetura (justificativas completas em results/PHASE_1.md, Bloco 2):
 
 ESTÁGIO A — enumeração de prefixos C5 = {5 < p2 < p3 < p4 < p5} por DFS com as podas
 de índice do Bloco 1 (terminação garantida: nos níveis 1..4 o limite do laço é

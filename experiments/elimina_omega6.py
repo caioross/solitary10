@@ -3,7 +3,7 @@
 Reproduz mecanicamente o Teorema 1.2 de arXiv:2404.00624 (Chatterjee-Mandal-Mandal)
 usando o certificador core/omega6.py (cadeias de divisibilidade: fecho por ordens,
 orçamentos v3/v5 da equação-mestra, e extração exata do sexto primo pelo índice).
-Ver a moldura matemática em results/FASE_1.md (Bloco 2) e core/omega6.py.
+Ver a moldura matemática em results/PHASE_1.md (Bloco 2) e core/omega6.py.
 
 Se alguma escada não fechar (NaoCertificavel), NADA é certificado.
 """
@@ -45,7 +45,7 @@ def main() -> None:
           "Zsygmondy e formula de valuacao de Nielsen/Voight (classicos; formula "
           "re-testada exaustivamente em tests/test_cadeias.py) + correção de "
           "core/omega6.py e core/cadeias.py (passada adversarial em "
-          "results/FASE_1.md §2.5) + correção de sympy.n_order/factorint/nextprime "
+          "results/PHASE_1.md §2.5) + correção de sympy.n_order/factorint/nextprime "
           "nas chamadas consumidas (todas re-verificadas por implementações "
           "próprias na passada adversarial)]")
     print("Reproduz o Teorema 1.2 de arXiv:2404.00624 por via independente.")

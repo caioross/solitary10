@@ -59,7 +59,7 @@ def main() -> None:
         print("Rótulo: [PROVADO-CONDICIONAL: Teoremas A-D e Lemas/Fato 0 da Fase 0 + "
               "teorema de Zsygmondy e identidade ciclotômica (clássicos, não "
               "re-derivados aqui) + correção do motor core/motor.py (passada "
-              "adversarial em results/FASE_1.md §1.5) + correção de "
+              "adversarial em results/PHASE_1.md §1.5) + correção de "
               "sympy.factorint/cyclotomic_poly/nextprime (superfície do certificado "
               "re-verificada sem sympy em tests/test_motor_crosscheck.py)]")
 

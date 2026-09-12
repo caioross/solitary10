@@ -1,4 +1,4 @@
-"""Verificação numérica independente das provas da Fase 0 (results/FASE_0.md).
+"""Verificação numérica independente das provas da Fase 0 (results/PHASE_0.md).
 
 Independência: usa uma segunda implementação de sigma por divisão por tentativa,
 sem sympy, e cruza com core.abundancy.sigma. Toda comparação é por inteiros ou
