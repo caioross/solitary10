@@ -14,6 +14,28 @@ Formato de entrada:
 
 ---
 
+## [2026-09-12] Fase 1, Bloco 6 — cota de Wieferich dos desconhecidos com cota L insegura
+
+- **O que se tentou:** Cor. 6 + Prop. 9 de Thackeray para limitar o expoente dos
+  primos conhecidos nos nós quase justos (FASE_1.md §6). O termo de Wieferich dos
+  desconhecidos precisa de uma cota L sobre TODOS eles; derivei-a nível a nível
+  pelo índice (R′ − 1 ≥ 1/(b·U) via o denominador reduzido de R − 1).
+- **Por que falhou (razão precisa):** a recursão supõe R′ > 1 no filho, o que só
+  vale para U₁ > B_min = 1 + 1/(R − 1); os filhos com U₁ ≤ B_min têm prod_sup ≥ 9/5
+  e nenhuma cota de índice para os demais desconhecidos. O teste que compara a
+  cota com o laço real do índice no filho falhou em 738 786 089 > L = 738 786 049.
+  Uma versão anterior (denominador cru, sem σ(q^{a_q}) dos fixos) também era
+  insegura; a versão "exata" era frouxa demais depois de um expoente grande fixo
+  (k = 8: 18 s → > 10 min). Na forma sólida (s ≤ 2 e lo ≥ B_min) a cota nunca
+  dispara em k ≤ 8 — o ganho visto antes (90 032 → 69 644 nós) era artefato da cota
+  insegura.
+- **O que aproveitar:** Prop. 9 e Cor. 6 estão certos e testados; `maximos` e o
+  lema do fecho total ficam no código. A lição: uma cota sobre "todos os
+  desconhecidos" tem de ser válida em TODO ramo, e o teste contra o laço real do
+  índice é obrigatório para qualquer cota nova. O caminho (Bloco 7, FASE_1.md §6.3):
+  partir o nó em "menor desconhecido ≤ B′" (fator virtual I(B′²) em prod_min faz as
+  caudas matarem sem enumerar) e "todos > B′" (onde o Cor. 6 vale).
+
 ## [2026-09-10] Fase 1, Bloco 5 — nós quase justos com s = 2 (beco atual para ω = 9)
 
 - **O que se tentou:** fechar k = 9 com o certificador recursivo depois de eliminar

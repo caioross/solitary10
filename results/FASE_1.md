@@ -905,3 +905,112 @@ agora com a árvore de k = 8 reduzida em 2,3× e os mesmos vereditos. O `omega_k
 continua **sem passada adversarial própria**; a lista de alvos de §4.8 ganha o
 item (viii): a completude do solver (o argumento "um ℓ basta" e o tratamento de ε
 para ℓ ∈ {3, 5} no caso (0, 0)).
+
+---
+
+## Bloco 6 — Cota finita de expoente (Cor. 6 + Prop. 9 de Thackeray): implementada, sólida, e ainda inerte (aprovado: "continue")
+
+Objetivo aprovado (§5.4): re-derivar o Corolário 6 e a Proposição 9 de
+arXiv:2310.15900 e aplicá-los aos nós quase justos. O bloco entregou as duas peças
+com prova própria, testes contra força bruta e um buraco de soundness pego e
+fechado pela bateria — e terminou com um resultado negativo honesto: na forma
+**sólida**, a cota nunca dispara nos nós reais de k ≤ 8, e o ganho que a primeira
+versão mostrou vinha de uma cota insegura. O diagnóstico do porquê é o produto
+principal do bloco e define o Bloco 7.
+
+### 6.1 Corolário 6 re-derivado (cabeçalho de `core/omega_k.py`, bloco "Cota FINITA")
+
+Para r ∈ S (r ≠ 3): v_r(σ(N)) = a_r − v_r(num) + v_r(den) = Σ_{q ≠ r} v_r(σ(q^{a_q})), e
+com a_q par e o = ord_r(q) (LTE): a contribuição de q é v_r(a_q + 1) se o = 1;
+w_r(q) + v_r((a_q+1)/o) se o é ímpar > 1 e o | a_q + 1; 0 caso contrário, onde
+w_r(q) = v_r(q^o − 1) ≥ 1 é o nível de Wieferich de q em r.
+
+- **Níveis.** r^j | (a_q+1)/o (j = 1..v) ⟹ Φ_{r^j o}(q) | σ(N) tem primo primitivo t_j
+  com ord_{t_j}(q) = r^j o (Zsygmondy, sem exceção), logo t_j ≡ 1 (mod r^j),
+  t_j ∈ S∖{q, r} (t_j ≠ 3; t_j ≠ r pois o < r^j o), distintos por nível. Com
+  W_j = {t ∈ C∖{r,q} : r^j | t − 1} (encaixados) e os desconhecidos como coringas, o
+  nível máximo é o maior v com |W_j| + #coringas ≥ v − j + 1 para todo j ≤ v (Hall
+  para conjuntos encaixados). É a cota universal do Bloco 3 generalizada: r = 5 é o
+  caso sem termo de Wieferich (ord₅ ∈ {1, 2, 4}).
+- **Wieferich (Prop. 9).** Para q ≢ 1 (mod r): w_r(q) ≥ a ⟺ q^{r−1} ≡ 1 (mod r^a)
+  [(Z/r^a)* é cíclico; q^o ≡ 1 (mod r^a) sse ord_{r^a}(q) = o sse ord | r−1] ⟺
+  q ≡ y^{r^{a−1}} (mod r^a) para algum y ∈ 2..r−1 (as r−1 imagens são o subgrupo de
+  ordem r−1; y = 1 é excluído por q ≢ 1). Logo q ≥ m_a(r) := min_y (y^{r^{a−1}} mod
+  r^a), e q < m_a(r) ⟹ w_r(q) ≤ a − 1. Para conhecidos, w_r(q) é exato por
+  pow(q, r−1, r^a); ordem ímpar por q^{(r−1)_ímpar} ≡ 1 (mod r) — nada exige fatorar
+  r − 1. Para desconhecidos ≤ L, ω_max(r, L) = a − 1 para o menor a com m_a(r) > L
+  (custo O(r) por nível; `R_MAX_PROP9`).
+- **Cota.** a_r ≤ v_r(den) − v_r(num) + Σ_{q fixo} v_r(σ(q^{a_q})) + Σ_{q livre, o ímpar}
+  [w_r(q)·[o > 1] + nível(q)] + s·(ω_max(r, L) + nível(desconhecido)), com
+  nível(q) ≤ ⌊log_r(M_q + 1)⌋ se q já tem cota superior M_q.
+
+Verificação: `test_prop9_nivel_wieferich_contra_forca_bruta` (r ≤ 31, primos até
+10⁵: w_r(q) real ≤ cota; todo q < m_a(r) tem nível < a; 3¹⁰ ≡ 1 mod 11² ⟹ w₁₁(3) = 2),
+`test_cor6_majora_os_expoentes_de_amigos_plantados` (em nós parciais de três
+assinaturas plantadas a cota é ≥ o expoente verdadeiro), e a cota do 5 reproduz a
+universal do Bloco 3.
+
+### 6.2 O buraco de soundness na cota L dos desconhecidos — pego pelo teste
+
+A cota de Wieferich dos desconhecidos exige uma cota L sobre TODOS eles. Derivei-a
+nível a nível pelo índice: no nível com t restantes, sup(U)^t > R := (9/5)/prod_sup
+e (U/(U−1))^t ≤ e^{t/(U−1)}, ln R ≥ (R−1)/R, R < 2 dão U < 1 + 2t/(R − 1); no nível
+seguinte, com R − 1 = a/b reduzido, R′ − 1 = (aU − a − b)/(bU) tem denominador que
+divide b·U ≤ b·L₁, logo R′ − 1 ≥ 1/(b·L₁) — **se o numerador for positivo**. Não é,
+em geral: R′ > 1 ⟺ U > B_min := 1 + 1/(R−1). Os filhos com U₁ ≤ B_min têm
+prod_sup ≥ 9/5 e **nenhuma** cota de índice para os desconhecidos seguintes; a
+recursão assumiu positividade em silêncio. Quem pegou foi
+`test_cota_L_desconhecidos_e_uma_cota`, que compara a cota com o laço real do
+índice no filho: falhou em 738 786 089 > L = 738 786 049 (o primeiro primo acima
+de L, num filho sem cota). Antes disso, uma versão intermediária (denominador cru
+5·σ(5^{a₁})·∏q, que esquecia σ(q^{a_q}) dos fixos) também foi insegura, e a versão
+"exata" era tão frouxa após um expoente grande fixo (b ∋ σ(31⁴⁰)) que k = 8 passou
+de 18 s para > 10 min.
+
+Versão final, sólida: L só existe quando todo desconhecido é limitado sem partição
+— s = 1 (L = L₁) ou s = 2 com lo ≥ B_min (então L = 1 + 2·b·L₁); s ≥ 3 → sem L.
+`_ramos_cor6` recusa nos demais casos. Com isso a cota **nunca dispara** em k ≤ 8
+(`cor6_ramos = 0`): os nós quase justos têm sempre lo < B_min. A árvore de k = 8
+volta aos 90 032 nós do Bloco 5 (mesmo veredito).
+
+Ficou também no código, sólido e testado: `maximos` no estado (cotas superiores
+de expoente são fatos sobre o amigo, herdadas por todo descendente e só
+melhoradas; entram em prod_sup, limitam as caudas e filtram as listas), e o
+**lema do fecho total**: com todos os expoentes conhecidos fixos e nenhum
+σ(q^{a_q}) com primo fora de C ∪ {3}, cada desconhecido U só divide σ's de
+desconhecidos, logo ∏_U σ(U^{a_U}) = (∏_U U^{a_U})·K com K inteiro sobre C ∪ {3}, e
+x = (9/5)/∏_C I(q^{a_q}) = ∏_U I(U^{a_U}) = K seria inteiro em (1, 9/5) — o nó morre
+(`fecho_total_mortos`; unit-teste por simulação de "nenhum primo novo"). Não
+disparou em k ≤ 8 (nenhum nó chega com tudo fixo sem pins).
+
+### 6.3 Por que o índice degenera, exatamente, e como quebrá-lo (Bloco 7)
+
+No nó quase justo {5,7,11,13,31,97,52361} + U₁ + U₂ (a₁ = 2, R − 1 = 1,76·10⁻⁸):
+B_min = 1,03·10⁸ e L₁ = 2,05·10⁸. A metade (B_min, L₁] tem cota L₂ e o Cor. 6 se
+aplicaria; a metade (lo, B_min] — 5,9 milhões de primos — é onde prod_sup·sup(U₁)
+≥ 9/5, e cada filho vai para as caudas. A enumeração está na metade "sem cota", que
+o Cor. 6 não alcança. Mas justamente nela as **caudas** alcançam, se o nó souber que
+o menor desconhecido é ≤ B′: I(U₁^{a}) ≥ I(B′²) é um fator conhecido de prod_min, e
+prod_sup(C)·I(B′²) > 9/5 (definição de B′) garante que a cadeia de caudas mata —
+sem enumerar U₁. Proposta do **Bloco 7**: partir o nó em (a) "menor desconhecido
+≤ B′", com `hi = B′` no estado e o fator virtual I(B′²) em prod_min (caudas exatas +
+lema do fecho total nos ramos com tudo fixo), e (b) "todos > B′" (lo := B′), onde
+s = 2 ganha o Cor. 6 e s ≥ 3 enumera um intervalo já reduzido. Tudo com a mesma
+medida de terminação (s, #livres, m).
+
+### 6.4 Saída do script oficial e rótulos
+
+`python experiments/elimina_omega_k.py --k-max 8` (k = 6, 7, 8):
+
+```
+omega = 6: nos=55 mortos_min=0 ramo_i=16 particoes=29 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=26 com_primo_grande=0 casos_sem_fecho=3 ultimos_resolvidos=1 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 folhas=0 amigos=0 tempo=0.7s
+omega = 7: nos=459 mortos_min=0 ramo_i=46 particoes=172 ramos_expoente=0 caudas=0 conjuntos_completos=40 completos_mortos_indice=247 com_primo_grande=0 casos_sem_fecho=41 ultimos_resolvidos=5 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 folhas=0 amigos=0 tempo=0.9s
+omega = 8: nos=90032 mortos_min=193 ramo_i=361 particoes=45254 ramos_expoente=323 caudas=323 conjuntos_completos=23931 completos_mortos_indice=20654 com_primo_grande=0 casos_sem_fecho=467 ultimos_resolvidos=537 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 folhas=0 amigos=0 tempo=55.4s
+```
+
+
+Nenhum enunciado novo; ω(N) ≥ 9 (Resultado I) mantém o rótulo condicional; k = 9
+permanece aberto (§5.4). Alvos adicionais da passada adversarial: (ix) a
+derivação do Cor. 6 (níveis, Wieferich, sinal v_r(den) − v_r(num)); (x) a cota L e
+a condição lo ≥ B_min; (xi) o lema do fecho total (a integralidade de K e a
+exclusão do caso x inteiro pelo alvo 9/5).

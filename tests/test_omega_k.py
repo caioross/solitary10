@@ -7,7 +7,7 @@ from sympy import isprime, n_order
 import core.omega6 as omega6
 import core.omega_k as omega_k
 from core.cadeias import expoentes_validos_ordens
-from core.motor import I_pp, sigma_pp
+from core.motor import I_pp, sigma_pp, sup_pp
 from core.omega_k import NaoCertificavel, StatsK, _pinagem, certifica_omega
 
 
@@ -233,17 +233,28 @@ def test_ramificacao_por_expoente_com_cauda_no_residual_de_k8():
     ALVO = Fraction(9, 5)
     assert _prod_min_sup(C, {5: 2}, {})[1] > ALVO
     ramos = _ramos_expoente(C, {5: 2}, {})
-    assert ramos == [({5: 2, 11: 2}, {}), ({5: 2}, {11: 4})]
+    assert ramos == [({5: 2, 11: 2}, {}, {}), ({5: 2}, {11: 4}, {})]
     ramos_cauda = _ramos_expoente(C, {5: 2}, {11: 4})
-    assert ramos_cauda == [({5: 2, 7: 2}, {11: 4}), ({5: 2}, {11: 4, 7: 4})]
+    assert ramos_cauda == [({5: 2, 7: 2}, {11: 4}, {}), ({5: 2}, {11: 4, 7: 4}, {})]
+    # com cota superior a_11 <= 2 (maximos) o ganho do 11 é 1: a ramificação vai
+    # para outro primo (o 13), nenhuma cauda toca o 11, e a cota viaja nos filhos
+    r11 = _ramos_expoente(C, {5: 2}, {}, {11: 2})
+    assert r11 and all(11 not in m and mx == {11: 2} for _, m, mx in r11)
+    assert any(f.get(13) == 2 for f, _, _ in r11) and any(m.get(13) == 4 for _, m, _ in r11)
+    # com a_13 <= 2 tambem, prod_sup (com I(11^2) e I(13^2) no lugar dos sups) cai
+    # abaixo de 9/5: nenhuma cauda mata, e a ramificacao recusa (None) — o indice,
+    # agora limitado, e o caminho
+    from core.omega_k import _prod_min_sup
+    assert _prod_min_sup(C, {5: 2}, {}, {11: 2, 13: 2})[1] < ALVO
+    assert _ramos_expoente(C, {5: 2}, {}, {11: 2, 13: 2}) is None
     assert _prod_min_sup(C, {5: 2}, {11: 4, 7: 4})[0] > ALVO       # cauda dupla morta
     # a partição completa do nó só produz esses ramos (a1 = 2 fixo); o filho
     # exato fecha sigma(11^2) = 7·19 no passo 1: com lo = 13 o 19 é pinado; com
     # lo = 89 (19 <= lo) o filho MORRE — pelo invariante o 19 já estaria em C
     st = StatsK()
     casos = omega_k._particao(C, 2, 13, st, {5: 2}, {})
-    assert (((), {5: 2, 11: 2}, {}) in casos) and (((), {5: 2}, {11: 4}) in casos)
-    assert omega_k._particao(C, 2, 13, st, {5: 2, 11: 2}, {}) == [((19,), {5: 2, 11: 2}, {})]
+    assert (((), {5: 2, 11: 2}, {}, {}) in casos) and (((), {5: 2}, {11: 4}, {}) in casos)
+    assert omega_k._particao(C, 2, 13, st, {5: 2, 11: 2}, {}) == [((19,), {5: 2, 11: 2}, {}, {})]
     assert omega_k._particao(C, 2, 89, st, {5: 2, 11: 2}, {}) == []
 
 
@@ -258,8 +269,8 @@ def test_ramificacao_particiona_todos_os_expoentes_e_progride():
             continue
         ramos = _ramos_expoente(C, fixos, {})
         assert ramos is not None
-        exatos = [f for f, m in ramos if m == {}]
-        caudas = [m for f, m in ramos if m != {}]
+        exatos = [f for f, m, _ in ramos if m == {}]
+        caudas = [m for f, m, _ in ramos if m != {}]
         assert len(caudas) == 1
         (q, A), = caudas[0].items()
         assert A % 2 == 0 and A >= 4
@@ -435,3 +446,159 @@ def test_ultimo_desconhecido_e_completo_contra_forca_bruta():
     assert _ultimo_desconhecido(C, 31, {5: 2}, 1, 0, prod_sup) == _bruto_ultimo(C, 31, 5, 1, U_max)
     esperado = sorted(set(_bruto_ultimo(C, 31, 3, 0, U_max)) | set(_bruto_ultimo(C, 31, 5, 0, U_max)))
     assert _ultimo_desconhecido(C, 31, {5: 2}, 0, 0, prod_sup) == esperado
+
+
+# ---------------------------------------------------------------------------
+# Bloco 6 — cota finita de expoente (Cor. 6) e níveis de Wieferich (Prop. 9)
+# ---------------------------------------------------------------------------
+
+def _w_bruto(r, q):
+    """w_r(q) = v_r(q^{ord_r(q)} - 1) por definição (ordem via n_order)."""
+    o = int(n_order(q, r))
+    x = q**o - 1
+    v = 0
+    while x % r == 0:
+        x //= r
+        v += 1
+    return v
+
+
+def test_prop9_nivel_wieferich_contra_forca_bruta():
+    # para r pequeno e todo primo q <= L, w_r(q) <= _nivel_wieferich_max(r, L); e a
+    # cota e justa em pelo menos um caso (existe q <= L atingindo-a) para algum L
+    from sympy import primerange
+    from core.omega_k import _min_residuo_teichmuller, _nivel_wieferich_max
+    for r in (3, 5, 7, 11, 13, 31):
+        for L in (10**3, 10**4, 10**5):
+            cota = _nivel_wieferich_max(r, L)
+            maximo = max(_w_bruto(r, q) for q in primerange(2, L + 1) if q % r not in (0, 1))
+            assert maximo <= cota, (r, L, maximo, cota)
+    # a definição de m_a(r): todo q ≢ 1 mod r com w_r(q) >= a satisfaz q >= m_a(r)
+    for r in (7, 11, 31):
+        for a in (2, 3):
+            m = _min_residuo_teichmuller(r, a)
+            for q in primerange(2, min(m, 200_000)):
+                if q % r in (0, 1):
+                    continue
+                assert _w_bruto(r, q) < a, (r, a, q)
+    # exemplo clássico: 3^10 = 59049 = 11^2·488 + 1, logo w_11(3) = 2 e m_2(11) <= 3
+    assert _w_bruto(11, 3) == 2 and _min_residuo_teichmuller(11, 2) <= 3
+
+
+def test_cota_L_desconhecidos_e_uma_cota():
+    # nivel 1: todo q visitado pelo laco do indice e <= L1. Filhos com q <= B_min
+    # tem prod_sup >= 9/5 (sem cota de indice): a cota L so vale para q > B_min, e
+    # nesses filhos (s = 2) o laco do indice do filho para em q2 <= L.
+    from sympy import nextprime
+    from core.omega_k import _cota_L_desconhecidos, _prod_min_sup, _sup_prox_excl
+    for C, s, fixos in [([5, 7, 11, 13, 31], 2, {5: 2}), ([5, 7, 11, 13, 31, 331], 1, {5: 2}),
+                        ([5, 7, 11, 13, 31], 2, {5: 2, 7: 4}), ([5, 7, 11, 13, 31, 97], 3, {5: 2})]:
+        L1, B_min, L = _cota_L_desconhecidos(C, s, fixos, {})
+        assert (L is None) == (s >= 3)
+        _, prod_sup = _prod_min_sup(C, fixos, {})
+        q = max(C)
+        visitados = []
+        while True:
+            q = int(nextprime(q))
+            if prod_sup * sup_pp(q) * _sup_prox_excl(q, s - 1, frozenset(C)) <= Fraction(9, 5):
+                break
+            visitados.append(q)
+        assert all(q <= L1 for q in visitados), (C, s, visitados[-1], L1)
+        if C == [5, 7, 11, 13, 31, 331]:
+            assert not visitados and L1 < 331     # no morto pelo indice: nenhum U > lo cabe
+        if s != 2:
+            continue
+        for q in visitados:
+            ps2 = prod_sup * sup_pp(q)
+            if q <= B_min:
+                assert ps2 >= Fraction(9, 5), (C, q, B_min)      # filho sem cota
+                continue
+            assert ps2 < Fraction(9, 5)
+            q2 = q
+            while True:
+                q2 = int(nextprime(q2))
+                if ps2 * sup_pp(q2) <= Fraction(9, 5):
+                    break
+                assert q2 <= L, (C, q, q2, L)
+
+
+def test_cor6_majora_os_expoentes_de_amigos_plantados(monkeypatch):
+    # Em qualquer no (C parcial, s desconhecidos, alguns expoentes fixos) a cota
+    # A_r tem de ser >= o expoente verdadeiro de r no amigo plantado.
+    from core.omega_k import _cota_L_desconhecidos, _cota_expoente_conhecido
+    assinaturas = [
+        {5: 2, 7: 2, 11: 2, 13: 2, 17: 2, 19: 2, 23: 4},
+        {5: 4, 7: 2, 11: 6, 13: 2, 17: 2, 19: 4, 23: 2},
+        {5: 2, 7: 8, 11: 2, 13: 4, 17: 2, 19: 2, 23: 2, 29: 2},
+    ]
+    for assin in assinaturas:
+        alvo = _I(assin)
+        monkeypatch.setattr(omega6, "ALVO", alvo)
+        primos = sorted(assin)
+        for n_conhecidos in range(len(primos), 2, -1):
+            C = primos[:n_conhecidos]
+            s = len(primos) - n_conhecidos
+            for fixos in ({}, {5: assin[5]}, {5: assin[5], primos[1]: assin[primos[1]]}):
+                cotas = _cota_L_desconhecidos(C, s, fixos, {}) if s else None
+                if s and (cotas is None or cotas[2] is None or max(C) < cotas[1]):
+                    continue        # sem cota valida para todos os desconhecidos neste no
+                L = None if cotas is None else max(cotas[2], max(primos))
+                for r in C:
+                    if r in fixos:
+                        continue
+                    A = _cota_expoente_conhecido(r, C, s, fixos, L)
+                    if A is None:
+                        continue
+                    assert A >= assin[r], (assin, C, s, fixos, r, A)
+
+
+def test_cor6_no_quase_justo_de_k9_da_cotas_finitas():
+    # C = {5,7,11,13,31,97}, s = 3, a1 = 2: o indice enumera ~14 000 primos; a cota
+    # finita existe para cada conhecido livre e converte a cauda em ramos exatos
+    from core.omega_k import _cota_L_desconhecidos, _cota_expoente_conhecido, _ramos_cor6
+    C = [5, 7, 11, 13, 31, 97]
+    L1, B_min, L = _cota_L_desconhecidos(C, 3, {5: 2}, {})
+    assert L1 > 100_000 and L is None            # s = 3: sem cota uniforme
+    assert _ramos_cor6(C, 3, 97, {5: 2}, {}) is None
+    # no filho com s = 2 e lo acima de B_min todos os desconhecidos tem cota
+    C = [5, 7, 11, 13, 31, 97, 52361]
+    L1, B_min, L = _cota_L_desconhecidos(C, 2, {5: 2}, {})
+    assert 10**8 < B_min < L1 < L
+    assert _ramos_cor6(C, 2, 52361, {5: 2}, {}) is None      # lo < B_min: nao se aplica
+    lo = B_min + 1
+    for r in (7, 11, 13, 31, 97, 52361):
+        A = _cota_expoente_conhecido(r, C, 2, {5: 2}, L)
+        assert A is not None and 2 <= A <= 400, (r, A)
+    ramos = _ramos_cor6(C, 2, lo, {5: 2}, {})
+    assert ramos and all(m == {} for _, m, _ in ramos)
+    r = next(iter(set(ramos[0][0]) - {5}))
+    assert sorted(f[r] for f, _, _ in ramos) == list(range(2, max(f[r] for f, _, _ in ramos) + 1, 2))
+    # as cotas de todos os livres viajam nos filhos como maximos, e o ramo usa a menor
+    mx = ramos[0][2]
+    assert set(mx) == {7, 11, 13, 31, 97, 52361} and all(v >= 2 for v in mx.values())
+    assert max(f[r] for f, _, _ in ramos) == mx[r] - (mx[r] % 2)
+
+
+def test_lema_do_fecho_total_mata_no_tudo_fixo_sem_pins(monkeypatch):
+    # (1) pins de sigma's fixos: C = {5, 7, 11} com a = 2 fixos, s = 2, lo = 11:
+    #     sigma(25) = 31, sigma(49) = 3·19, sigma(121) = 7·19 -> pins (19, 31), sem lema
+    st = StatsK()
+    casos = omega_k._particao([5, 7, 11], 2, 11, st, {5: 2, 7: 2, 11: 2}, {})
+    assert casos and casos[0][0] == (19, 31) and st.fecho_total_mortos == 0
+    # (2) com lo = 31 o pin 19 <= lo mata o no (invariante), tambem sem lema
+    assert omega_k._particao([5, 7, 11], 2, 31, StatsK(), {5: 2, 7: 2, 11: 2}, {}) == []
+    # (3) o lema: todos fixos e NENHUM primo novo em sigma(q^{a_q}) (simulado):
+    #     x = (9/5) / (I(25) I(49) I(121)) = 1.135... nao e inteiro -> morto
+    monkeypatch.setattr(omega_k, "_novos_de_sigma", lambda *a, **k: ((), 0))
+    st = StatsK()
+    assert omega_k._particao([5, 7, 11], 2, 11, st, {5: 2, 7: 2, 11: 2}, {}) == []
+    assert st.fecho_total_mortos == 1
+    x = Fraction(9, 5) / (I_pp(5, 2) * I_pp(7, 2) * I_pp(11, 2))
+    assert x.denominator != 1 and 1 < x < Fraction(9, 5)
+    # (4) com um expoente livre o lema nao se aplica (o no segue para os orcamentos)
+    st = StatsK()
+    try:
+        omega_k._particao([5, 7, 11], 2, 11, st, {5: 2, 7: 2}, {})
+    except NaoCertificavel:
+        pass
+    assert st.fecho_total_mortos == 0

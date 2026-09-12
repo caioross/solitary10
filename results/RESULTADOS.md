@@ -1,6 +1,6 @@
 # RESULTADOS — enunciados com rótulo (regras de rigor: `docs/METHODOLOGY.md`)
 
-Última atualização: 2026-09-10 (Fase 1, Bloco 5). Detalhes: `FASE_0.md`, `FASE_1.md`.
+Última atualização: 2026-09-12 (Fase 1, Bloco 6). Detalhes: `FASE_0.md`, `FASE_1.md`.
 
 ## Notação
 
@@ -79,7 +79,18 @@ testemunha em C, lado direito finito, U por raiz inteira exata) substitui a
 enumeração pelo índice do último desconhecido; verificado contra força bruta
 independente. k = 8 cai de 210 456 para 90 032 nós (36 s), mesmo veredito. k = 9
 fica bloqueado por nós quase justos com **dois** desconhecidos (FRACASSOS.md), o
-regime em que Thackeray gastou 25 h de CPU; roda em background ao fechar o bloco.
+regime em que Thackeray gastou 25 h de CPU; 12 h de força bruta não bastaram.
+
+## Fase 1, Bloco 6 — Cor. 6 + Prop. 9 (FASE_1.md, Bloco 6)
+
+Nenhum enunciado novo. Re-derivados e implementados com testes contra força bruta:
+a Proposição 9 (níveis de Wieferich pelo subgrupo de ordem r−1 de (Z/rᵃ)*) e o
+Corolário 6 (cota finita a_r ≤ v_r(den) − v_r(num) + níveis + Wieferich). Uma cota L
+insegura sobre os desconhecidos foi pega pelo teste que a compara com o laço real
+do índice e fechada; na forma sólida a cota nunca dispara em k ≤ 8 (mesma árvore do
+Bloco 5). Ficam no código `maximos` (cotas superiores herdadas) e o lema do fecho
+total. k = 9 continua aberto; o diagnóstico de §6.3 (partição por B′ com fator
+virtual nas caudas) é o Bloco 7 candidato.
 
 ## Verificações numéricas
 
