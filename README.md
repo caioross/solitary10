@@ -76,8 +76,8 @@ later paper.
 | E5 | arXiv:2412.02701 Thm 1.2 | effective only for the 2nd to 5th smallest prime ($X_6 < 1$); the title and abstract promise all primes | `PROVED` |
 | E6 | arXiv:2404.00624 Thm 1.2, Case 12 | the printed factor $381/361 = I(19^2)$ should be $I(23^2) = 553/529$; the case still closes | `PROVED` |
 
-Catalogue: [`results/ERRATA.md`](results/ERRATA.md). Manuscript:
-[`publicacao/errata_friends_of_10.tex`](publicacao/errata_friends_of_10.tex).
+Catalogue: [`results/ERRATA.md`](results/ERRATA.md). A corrigenda note is being
+prepared for submission.
 
 ## How the certifiers work
 
@@ -165,13 +165,11 @@ tests/         107 tests: independent re-implementations, planted targets, froze
 experiments/   reproducible command-line scripts (each takes --help)
 results/       RESULTADOS.md (labelled statements) · FASE_0.md, FASE_1.md (phase reports)
                ERRATA.md (corrigenda catalogue) · FRACASSOS.md (abandoned attacks, with reasons)
-literatura/    one full-text reading note per paper, theorems stated verbatim
-publicacao/    the corrigenda manuscript and its submission notes
 docs/          research protocol and labelling rules
 ```
 
-Reports and reading notes are written in Portuguese; the code, the protocol and the
-manuscript are in English. Migration of the reports is in progress.
+Reports are written in Portuguese; the code and the protocol are in English. Migration
+of the reports is in progress.
 
 ## Method
 
@@ -184,9 +182,6 @@ abandoned attacks are logged with the precise reason; and a divergence from the
 literature is a finding to be reported, never a discrepancy to be smoothed over.
 
 ## References
-
-Full list, with links and the exact versions consulted, in
-[`literatura/PAPERS.md`](literatura/PAPERS.md).
 
 - J. Ward, *Does Ten Have a Friend?*, Int. J. Math. Comput. Sci. 3(3), 153–158 (2008). arXiv:0806.1001
 - H. R. Thackeray, *Each friend of 10 has at least 10 nonidentical prime factors*, Indag. Math. 35(3), 595–607 (2024). arXiv:2310.15900 — the current record

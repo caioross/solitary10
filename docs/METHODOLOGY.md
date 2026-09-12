@@ -24,8 +24,7 @@ worse than no result at all.
 ## Known constraints on a hypothetical friend `N`
 
 Every entry below was re-derived, or at least verified numerically, before being used as
-a hypothesis anywhere in this repository. Reading notes with exact statements are in
-`literatura/`.
+a hypothesis anywhere in this repository.
 
 | # | Constraint | Source |
 |---|---|---|
@@ -115,10 +114,8 @@ core/         verified utilities (exact arithmetic; everything covered by tests)
 tests/        pytest — must be green before any commit
 experiments/  search and exploration scripts (reproducible, each with --help)
 results/      RESULTADOS.md (labelled statements), FASE_N.md (reports), FRACASSOS.md
-literatura/   PAPERS.md plus one reading note per paper, theorems stated verbatim
-publicacao/   manuscripts derived from results/ (currently the corrigenda note)
 ```
 
-Reports in `results/` and reading notes in `literatura/` are written in Portuguese; they
+Reports in `results/` are written in Portuguese; they
 are being migrated to English. The labels themselves stay in their original form so that
 older reports remain searchable.

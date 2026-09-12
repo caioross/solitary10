@@ -28,4 +28,7 @@ Thumbs.db
 # Local scratch (search logs, partial sweeps, downloaded PDFs)
 scratch/
 *.log
-literatura/pdf/
+
+# Working material kept out of the public repository
+literatura/
+publicacao/
