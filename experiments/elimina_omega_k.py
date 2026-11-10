@@ -23,7 +23,7 @@ from core.omega_k import NaoCertificavel, certifica_omega  # noqa: E402
 def roda(k: int, args_pins: bool = False) -> bool:
     t0 = time.perf_counter()
     try:
-        st = certifica_omega(k)
+        st = certifica_omega(k, light=not args_pins)
     except NaoCertificavel as exc:
         print(f"omega = {k}: NAO CERTIFICADO apos {time.perf_counter() - t0:.1f}s")
         print(f"   estado residual: {exc}")
@@ -35,13 +35,14 @@ def roda(k: int, args_pins: bool = False) -> bool:
           f"completos_mortos_indice={st.completos_mortos_indice} "
           f"com_primo_grande={st.conjuntos_com_primo_grande} "
           f"casos_sem_fecho={st.casos_sem_fecho} ultimos_resolvidos={st.ultimos_resolvidos} candidatos_ultimo={st.candidatos_ultimo} cor6_ramos={st.cor6_ramos} cor6_mortos={st.cor6_mortos} fecho_total_mortos={st.fecho_total_mortos} "
+          f"splits={st.splits} dead_hi={st.dead_hi} "
           f"folhas={st.assinaturas_testadas} amigos={len(st.amigos)} tempo={dt:.1f}s")
     if st.pins and args_pins:
         print("   pins (prefixo, caso, primos pinados):")
         for c, caso, p in st.pins:
             print(f"     {list(c)} {caso} -> {list(p)}")
-    elif st.pins:
-        print(f"   pins registrados: {len(st.pins)} (use --pins para listar)")
+    elif st.n_pins:
+        print(f"   pins registrados: {st.n_pins} (use --pins para listar)")
     if st.amigos:
         print(f"!!! omega = {k}: AMIGO(S) DE 10 ENCONTRADO(S): {st.amigos}")
         print("    Reverifique com fatoracao independente antes de qualquer alarde.")

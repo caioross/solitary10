@@ -252,9 +252,10 @@ def test_ramificacao_por_expoente_com_cauda_no_residual_de_k8():
     # exato fecha sigma(11^2) = 7·19 no passo 1: com lo = 13 o 19 é pinado; com
     # lo = 89 (19 <= lo) o filho MORRE — pelo invariante o 19 já estaria em C
     st = StatsK()
-    casos = omega_k._particao(C, 2, 13, st, {5: 2}, {})
+    casos = [c[:4] for c in omega_k._particao(C, 2, 13, st, {5: 2}, {})]
     assert (((), {5: 2, 11: 2}, {}, {}) in casos) and (((), {5: 2}, {11: 4}, {}) in casos)
-    assert omega_k._particao(C, 2, 13, st, {5: 2, 11: 2}, {}) == [((19,), {5: 2, 11: 2}, {}, {})]
+    assert [c[:4] for c in omega_k._particao(C, 2, 13, st, {5: 2, 11: 2}, {})] == \
+        [((19,), {5: 2, 11: 2}, {}, {})]
     assert omega_k._particao(C, 2, 89, st, {5: 2, 11: 2}, {}) == []
 
 
@@ -494,7 +495,11 @@ def test_cota_L_desconhecidos_e_uma_cota():
     for C, s, fixos in [([5, 7, 11, 13, 31], 2, {5: 2}), ([5, 7, 11, 13, 31, 331], 1, {5: 2}),
                         ([5, 7, 11, 13, 31], 2, {5: 2, 7: 4}), ([5, 7, 11, 13, 31, 97], 3, {5: 2})]:
         L1, B_min, L = _cota_L_desconhecidos(C, s, fixos, {})
-        assert (L is None) == (s >= 3)
+        assert (L is None) == (s >= 2)          # s = 2 needs lo >= B_min (given below)
+        if s == 2:
+            assert _cota_L_desconhecidos(C, s, fixos, {}, None, None, B_min - 1)[2] is None
+            L = _cota_L_desconhecidos(C, s, fixos, {}, None, None, B_min)[2]
+            assert L is not None
         _, prod_sup = _prod_min_sup(C, fixos, {})
         q = max(C)
         visitados = []
@@ -515,11 +520,16 @@ def test_cota_L_desconhecidos_e_uma_cota():
                 continue
             assert ps2 < Fraction(9, 5)
             q2 = q
+            ultimo = None
             while True:
                 q2 = int(nextprime(q2))
                 if ps2 * sup_pp(q2) <= Fraction(9, 5):
                     break
                 assert q2 <= L, (C, q, q2, L)
+                ultimo = q2
+            if q == int(nextprime(B_min)) and ultimo is not None:
+                # the bound is essentially attained at the first child above B_min
+                assert L < 2 * ultimo + 2, (C, q, ultimo, L)
 
 
 def test_cor6_majora_os_expoentes_de_amigos_plantados(monkeypatch):
@@ -539,7 +549,7 @@ def test_cor6_majora_os_expoentes_de_amigos_plantados(monkeypatch):
             C = primos[:n_conhecidos]
             s = len(primos) - n_conhecidos
             for fixos in ({}, {5: assin[5]}, {5: assin[5], primos[1]: assin[primos[1]]}):
-                cotas = _cota_L_desconhecidos(C, s, fixos, {}) if s else None
+                cotas = _cota_L_desconhecidos(C, s, fixos, {}, None, None, max(C)) if s else None
                 if s and (cotas is None or cotas[2] is None or max(C) < cotas[1]):
                     continue        # sem cota valida para todos os desconhecidos neste no
                 L = None if cotas is None else max(cotas[2], max(primos))
@@ -562,10 +572,12 @@ def test_cor6_no_quase_justo_de_k9_da_cotas_finitas():
     assert _ramos_cor6(C, 3, 97, {5: 2}, {}) is None
     # no filho com s = 2 e lo acima de B_min todos os desconhecidos tem cota
     C = [5, 7, 11, 13, 31, 97, 52361]
-    L1, B_min, L = _cota_L_desconhecidos(C, 2, {5: 2}, {})
-    assert 10**8 < B_min < L1 < L
+    L1, B_min, L = _cota_L_desconhecidos(C, 2, {5: 2}, {}, None, None, 52361)
+    assert 10**8 < B_min < L1 and L is None                  # lo < B_min: no bound on U_2
     assert _ramos_cor6(C, 2, 52361, {5: 2}, {}) is None      # lo < B_min: nao se aplica
     lo = B_min + 1
+    L = _cota_L_desconhecidos(C, 2, {5: 2}, {}, None, None, lo)[2]
+    assert L1 < L < L1 * L1
     for r in (7, 11, 13, 31, 97, 52361):
         A = _cota_expoente_conhecido(r, C, 2, {5: 2}, L)
         assert A is not None and 2 <= A <= 400, (r, A)
@@ -575,7 +587,10 @@ def test_cor6_no_quase_justo_de_k9_da_cotas_finitas():
     assert sorted(f[r] for f, _, _ in ramos) == list(range(2, max(f[r] for f, _, _ in ramos) + 1, 2))
     # as cotas de todos os livres viajam nos filhos como maximos, e o ramo usa a menor
     mx = ramos[0][2]
-    assert set(mx) == {7, 11, 13, 31, 97, 52361} and all(v >= 2 for v in mx.values())
+    # Block 7: bounds of expensive primes (r > R_CHEAP_PROP9, here 52361) are computed
+    # only when no cheap prime can be branched, so only the cheap ones travel as maximos
+    assert set(mx) == {7, 11, 13, 31, 97} and all(v >= 2 for v in mx.values())
+    assert r in mx
     assert max(f[r] for f, _, _ in ramos) == mx[r] - (mx[r] % 2)
 
 
@@ -602,3 +617,427 @@ def test_lema_do_fecho_total_mata_no_tudo_fixo_sem_pins(monkeypatch):
     except NaoCertificavel:
         pass
     assert st.fecho_total_mortos == 0
+
+
+# ---------------------------------------------------------------------------
+# Block 7 - the B_min split of a near-tight node (state field `hi`)
+# ---------------------------------------------------------------------------
+
+NEAR_TIGHT = [5, 7, 11, 13, 31, 97, 52361]      # a1 = 2: prod_sup = 9/5 - 1.76e-8
+
+
+def test_block7_index_facts():
+    # For an integer U >= 2: prod_sup*sup(U) >= 9/5 iff U <= B; v(B-1) > sup(B);
+    # prod_sup*v(h) < 9/5 for every h > B. Checked exactly on several nodes.
+    from core.omega_k import _prod_min_sup, _virtual
+    ALVO = Fraction(9, 5)
+    nodes = [(NEAR_TIGHT, {5: 2}), ([5, 7, 11, 13, 31, 97], {5: 2}), ([5, 7, 11, 13, 31], {5: 2}),
+             ([5, 7, 11, 13, 31, 331], {5: 2}), ([5, 7, 11, 13, 31], {5: 2, 7: 4})]
+    for C, fixos in nodes:
+        _, prod_sup = _prod_min_sup(C, fixos, {})
+        assert prod_sup < ALVO
+        R = ALVO / prod_sup
+        B = int(1 + 1 / (R - 1))
+        assert B >= 3
+        assert prod_sup * Fraction(B, B - 1) >= ALVO > prod_sup * Fraction(B + 1, B)
+        assert _virtual(B - 1) == Fraction(B, B - 1) + Fraction(1, (B - 1) ** 2)
+        assert prod_sup * _virtual(B - 1) > ALVO
+        for h in (B + 1, B + 2, 2 * B, 10 * B + 7):
+            assert prod_sup * _virtual(h) < ALVO, (C, h)
+    assert _virtual(7) == I_pp(7, 2) and _virtual(52361) == I_pp(52361, 2)
+
+
+def test_block7_virtual_factor_is_a_lower_bound():
+    # I(N) >= prod_min * v(hi) for every configuration with smallest unknown <= hi:
+    # exhaustive over small known sets, exponents, and unknown primes.
+    from sympy import primerange
+    from core.omega_k import _prod_min_sup, _virtual
+    for C, fixos, minimos in [([5, 7, 11], {5: 2}, {}), ([5, 7, 13], {5: 4}, {7: 4}),
+                              ([5, 11, 31], {5: 2, 31: 2}, {})]:
+        prod_min, _ = _prod_min_sup(C, fixos, minimos)
+        for hi in (17, 23, 40, 101):
+            v = _virtual(hi)
+            for U1 in primerange(max(C) + 1, hi + 1):
+                for a1 in (2, 4, 6):
+                    for others in ((), (U1 + 100 - (U1 + 100) % 2 + 3,)):   # any second factor > 1
+                        for exps in ([2, 2, 2], [2, 4, 2], [6, 2, 4]):
+                            total = Fraction(1)
+                            ok_cfg = True
+                            for q, e in zip(C, exps):
+                                e = fixos.get(q, max(e, minimos.get(q, 2)))
+                                total *= I_pp(q, e)
+                            total *= I_pp(U1, a1)
+                            for o in others:
+                                total *= Fraction(o * o + o + 1, o * o)
+                            assert ok_cfg and total >= prod_min * v, (C, hi, U1, a1)
+                            if others:
+                                assert total > prod_min * v
+
+
+def test_block7_split_cases_on_the_near_tight_node():
+    from core.omega_k import _INHERIT, _prod_min_sup, _split_cases
+    C, fixos = NEAR_TIGHT, {5: 2}
+    _, prod_sup = _prod_min_sup(C, fixos, {})
+    R = Fraction(9, 5) / prod_sup
+    B = int(1 + 1 / (R - 1))
+    assert 10**8 < B < 2 * 10**8
+    cases = _split_cases(C, 2, 52361, fixos, {}, {}, None)
+    assert cases[0] == ((), None, B - 1)                    # (a): hi := B - 1
+    assert cases[-1] == ((), B, _INHERIT)                   # (b): lo := B
+    if isprime(B):
+        assert cases[1] == ((B,), B, None)                  # (a2): pin B, lo := B, hi dropped
+    assert len(cases) == (3 if isprime(B) else 2)
+    # not applicable: s = 1, lo already >= B - 1, no progress on an existing hi,
+    # no index bound, short interval
+    assert _split_cases(C, 1, 52361, fixos, {}, {}, None) is None
+    assert _split_cases(C, 2, B - 1, fixos, {}, {}, None) is None
+    assert _split_cases(C, 2, 52361, fixos, {}, {}, B - 1) is None
+    assert _split_cases([5, 7, 11, 13, 31, 89], 2, 89, fixos, {}, {}, None) is None   # prod_sup > 9/5
+    assert _split_cases([5, 7, 11, 13, 31, 331], 2, 331, fixos, {}, {}, None) is None  # short
+    # with a larger hi already set, case (a) tightens it and (b) keeps it
+    cases = _split_cases(C, 2, 52361, fixos, {}, {}, 3 * B)
+    assert cases[0] == ((), None, B - 1) and cases[-1] == ((), B, _INHERIT)
+    # with hi = B, case (b) (U_1 > B) is empty and is omitted
+    cases = _split_cases(C, 2, 52361, fixos, {}, {}, B)
+    assert cases[0] == ((), None, B - 1) and all(c[1] != B or c[0] for c in cases)
+
+
+def test_block7_tails_apply_under_hi_and_the_chain_dies():
+    # In case (a) the tails are applicable although prod_sup < 9/5, they partition the
+    # exponent of the branched prime, and following only tail children ends in a node
+    # killed by the virtual factor.
+    from core.omega_k import _prod_min_sup, _ramos_expoente, _virtual
+    ALVO = Fraction(9, 5)
+    C, fixos = NEAR_TIGHT, {5: 2}
+    _, prod_sup = _prod_min_sup(C, fixos, {})
+    B = int(1 + 1 / (ALVO / prod_sup - 1))
+    hi = B - 1
+    assert _ramos_expoente(C, fixos, {}, {}) is None                 # no hi: index regime
+    assert _ramos_expoente(C, fixos, {}, {}, B + 1) is None          # hi > B: still no tails
+    minimos: dict[int, int] = {}
+    steps = 0
+    while True:
+        prod_min, _ = _prod_min_sup(C, fixos, minimos)
+        if prod_min * _virtual(hi) > ALVO:
+            break                                                    # dead by the virtual factor
+        ramos = _ramos_expoente(C, fixos, minimos, {}, hi)
+        assert ramos, "tails must apply while the node is alive"
+        caudas = [m for f, m, _ in ramos if f == fixos]
+        exatos = [f for f, m, _ in ramos if f != fixos]
+        assert len(caudas) == 1
+        (q, A), = [(q, a) for q, a in caudas[0].items() if minimos.get(q) != a]
+        amin = minimos.get(q, 2)
+        assert A > amin and sorted(f[q] for f in exatos) == list(range(amin, A, 2))
+        minimos = caudas[0]
+        steps += 1
+        assert steps <= len(C)
+    assert steps == len(C) - 1          # every free prime had to be pushed (margin ~ 1/hi^2)
+
+
+def test_block7_hi_inheritance_and_kills(monkeypatch):
+    from core.omega_k import Case, _INHERIT, _prod_min_sup, _virtual
+    calls = []
+    real = omega_k._certifica
+
+    def spy(C, s, lo, stats, fixos=None, minimos=None, maximos=None, hi=None):
+        calls.append((tuple(C), s, lo, hi))
+        if len(calls) == 1:
+            return real(C, s, lo, stats, fixos, minimos, maximos, hi)
+        return None                                   # do not descend below the children
+
+    def run(cases, C, s, lo, hi):
+        calls.clear()
+        monkeypatch.setattr(omega_k, "_particao", lambda *a, **k: cases)
+        monkeypatch.setattr(omega_k, "_certifica", spy)
+        omega_k._certifica(C, s, lo, StatsK(), {5: 2}, {}, {}, hi)
+        return calls[1:]
+
+    C = [5, 7, 11, 13, 31]
+    f = {5: 2}
+    # children without pins inherit hi; pins all > hi keep it; a pin <= hi drops it
+    kids = run([Case((), f, {}, {}), Case((1009,), f, {}, {}), Case((61,), f, {}, {}),
+                Case((61, 1009), f, {}, {})], C, 3, 31, 100)
+    assert kids == [((5, 7, 11, 13, 31), 3, 31, 100), ((5, 7, 11, 13, 31, 1009), 2, 31, 100),
+                    ((5, 7, 11, 13, 31, 61), 2, 31, None), ((5, 7, 11, 13, 31, 61, 1009), 1, 31, None)]
+    # explicit overrides of the split: (a) sets hi, (a2) pins with lo and drops hi, (b) raises lo
+    kids = run([Case((), f, {}, {}, None, 70), Case((71,), f, {}, {}, 71, None),
+                Case((), f, {}, {}, 71, _INHERIT)], C, 3, 31, 100)
+    assert kids == [((5, 7, 11, 13, 31), 3, 31, 70), ((5, 7, 11, 13, 31, 71), 2, 71, None),
+                    ((5, 7, 11, 13, 31), 3, 71, 100)]
+    # kills: s = 0 with hi set; hi <= lo; virtual factor above the target
+    for C_, s_, lo_, hi_ in [(C, 0, 31, 100), (C, 2, 100, 100), (C, 2, 31, 37)]:
+        st = StatsK()
+        calls.clear()
+        monkeypatch.setattr(omega_k, "_particao", lambda *a, **k: pytest.fail("must die before"))
+        monkeypatch.setattr(omega_k, "_certifica", real)
+        prod_min, _ = _prod_min_sup(C_, f, {})
+        if (C_, s_, lo_, hi_) == (C, 2, 31, 37):
+            assert prod_min < Fraction(9, 5) < prod_min * _virtual(37)
+        omega_k._certifica(C_, s_, lo_, st, f, {}, {}, hi_)
+        assert st.dead_hi == 1 and st.amigos == []
+
+
+def test_block7_index_fallback_stops_at_hi(monkeypatch):
+    # when the partition declines, the enumeration of the smallest unknown runs over
+    # primes in (lo, hi] only and the children drop hi
+    seen = []
+    real = omega_k._certifica
+
+    def spy(C, s, lo, stats, fixos=None, minimos=None, maximos=None, hi=None):
+        if len(seen) == 0:
+            seen.append("root")
+            return real(C, s, lo, stats, fixos, minimos, maximos, hi)
+        seen.append((C[-1] if C[-1] > 31 else max(C), s, lo, hi))
+        return None
+
+    def decline(*a, **k):
+        raise NaoCertificavel("declined")
+
+    monkeypatch.setattr(omega_k, "_particao", decline)
+    monkeypatch.setattr(omega_k, "_certifica", spy)
+    # children with q <= 67 are skipped by the usual prod_min kill (I(q^2) too large);
+    # without hi the loop runs up to the index break (q = 191), with hi = 100 up to 97
+    omega_k._certifica([5, 7, 11, 13, 31], 2, 31, StatsK(), {5: 2}, {}, {}, 100)
+    kids = seen[1:]
+    assert [k[2] for k in kids] == [71, 73, 79, 83, 89, 97]
+    assert all(k[1] == 1 and k[3] is None for k in kids)
+    seen.clear()
+    omega_k._certifica([5, 7, 11, 13, 31], 2, 31, StatsK(), {5: 2}, {}, {}, None)
+    assert [k[2] for k in seen[1:]][:6] == [71, 73, 79, 83, 89, 97] and seen[-1][2] == 191
+    # hi = 60: the node dies by the virtual factor before any enumeration
+    seen.clear()
+    st = StatsK()
+    omega_k._certifica([5, 7, 11, 13, 31], 2, 31, st, {5: 2}, {}, {}, 60)
+    assert seen == ["root"] and st.dead_hi == 1
+
+
+def test_block7_last_unknown_solver_uses_hi():
+    # s = 1 with hi: U <= hi bounds the right-hand side even when prod_sup >= 9/5
+    from core.omega_k import _ultimo_desconhecido
+    C = [5, 7, 11, 13, 31, 89]                    # prod_sup(a1 = 2) > 9/5: no index bound
+    assert _ultimo_desconhecido(C, 89, {5: 2}, 1, 0, Fraction(9, 5)) is None
+    for k5, k3, ell in [(1, 0, 5), (0, 1, 3)]:
+        got = _ultimo_desconhecido(C, 89, {5: 2}, k5, k3, Fraction(9, 5), 20000)
+        assert got == _bruto_ultimo(C, 89, ell, 1, 20000)
+    # and with an index bound the smaller of the two is used
+    C2 = [5, 7, 11, 13, 31]
+    from core.omega_k import _cota_indice_U, _prod_min_sup
+    ps = _prod_min_sup(C2, {5: 2}, {})[1]
+    assert _cota_indice_U(ps) == 96
+    assert _ultimo_desconhecido(C2, 31, {5: 2}, 0, 1, ps) == [67]
+    assert _ultimo_desconhecido(C2, 31, {5: 2}, 0, 1, ps, 66) == []
+    assert _ultimo_desconhecido(C2, 31, {5: 2}, 0, 1, ps, 67) == [67]
+
+
+def test_block7_near_tight_k9_node_closes_without_enumeration():
+    # Before Block 7 this node enumerated ~11 million primes for its smallest unknown
+    # (U_1 < 2.05e8). With the split it closes in a few dozen nodes.
+    import time
+    st = StatsK(k=9)
+    t = time.perf_counter()
+    omega_k._certifica(NEAR_TIGHT, 2, 52361, st, {5: 2}, {}, {}, None)
+    assert st.amigos == []
+    assert st.splits >= 1 and st.dead_hi >= 1 and st.cor6_ramos >= 1
+    assert st.ramo_i == 0                         # the index enumeration was never needed
+    assert st.nos < 500
+    assert time.perf_counter() - t < 60
+
+
+def test_block7_coprime_base_properties():
+    # pairwise coprime, all > 1, same prime support as the product of the inputs
+    from math import gcd
+    from sympy import factorint
+    from core.omega_k import _coprime_base
+    casos = [[12, 18, 35], [2 * 3 * 5, 3 * 5 * 7, 5 * 7 * 11], [49, 7, 343], [101 * 103, 103 * 107, 109],
+             [1, 97, 97], [2**10, 6**5, 15**3, 77], []]
+    for nums in casos:
+        base = _coprime_base(nums)
+        assert all(b > 1 for b in base)
+        for i in range(len(base)):
+            for j in range(i + 1, len(base)):
+                assert gcd(base[i], base[j]) == 1, (nums, base)
+        suporte = set()
+        for n in nums:
+            if n > 1:
+                suporte |= set(factorint(n))
+        suporte_base = set()
+        for b in base:
+            suporte_base |= set(factorint(b))
+        assert suporte_base == suporte, (nums, base)
+
+
+def test_block7_residue_unknowns_counts_and_reveals():
+    from core.omega_k import _residue_unknowns
+    p1, p2, p3, p4 = 1000003, 1000033, 1000037, 1000039
+    # coprime residues add up: 2 + 2 further unknown primes, nothing identified
+    assert _residue_unknowns([p1 * p2, p3 * p4], set()) == (set(), 4)
+    # a shared prime is revealed by the gcd, and so are the cofactors
+    assert _residue_unknowns([p1 * p2, p2 * p3], set()) == ({p1, p2, p3}, 0)
+    # the same residue twice still means only two unknown primes
+    assert _residue_unknowns([p1 * p2, p1 * p2], set()) == (set(), 2)
+    # a pin found elsewhere may divide a residue
+    assert _residue_unknowns([p1 * p2], {p1}) == ({p1, p2}, 0)
+    assert _residue_unknowns([p1 * p2 * p3], {p1}) == ({p1}, 2)
+    assert _residue_unknowns([p1**2 * p2], {p1}) == ({p1, p2}, 0)
+    assert _residue_unknowns([], {p1}) == ({p1}, 0)
+
+
+def test_block7_coprime_residues_of_two_fixed_primes_kill_with_two_slots(monkeypatch):
+    # sigma(7^42) = Phi_43(7) and sigma(11^42) = Phi_43(11) left unfactored (factoring
+    # budget forced to 0): each residue hides >= 2 unknown primes; they are coprime,
+    # so >= 4 unknown primes are needed. Dead with s <= 3, alive with s = 4.
+    from math import gcd
+    from core.omega_k import _divisao_pequena, _phi_valor
+    monkeypatch.setattr(omega_k, "FATORA_BITS", 0)
+    r7 = _divisao_pequena(_phi_valor(43, 7))[1]
+    r11 = _divisao_pequena(_phi_valor(43, 11))[1]
+    assert r7 > 1 and r11 > 1 and gcd(r7, r11) == 1
+    assert not isprime(r7) and not isprime(r11)
+    C = [5, 7, 11, 13, 31]
+    fixos = {5: 2, 7: 42, 11: 42}
+    for s_, vivo in [(2, False), (3, False), (4, True)]:
+        st = StatsK()
+        try:
+            casos = omega_k._particao(C, s_, 31, st, fixos, {})
+        except NaoCertificavel:
+            casos = "open"
+        assert (casos != []) == vivo, (s_, casos)
+    # one fixed prime alone only guarantees two unknown primes
+    st = StatsK()
+    try:
+        casos = omega_k._particao(C, 2, 31, st, {5: 2, 7: 42}, {})
+    except NaoCertificavel:
+        casos = "open"
+    assert casos != []
+
+
+def test_block7_index_loop_skips_exactly_the_dead_prefix(monkeypatch):
+    # _first_live_q is the least q with prod_min·v(q) <= 9/5 (exact), and starting the
+    # index loop there visits exactly the children visited without the skip.
+    from core.omega_k import _first_live_q, _prod_min_sup, _virtual
+    ALVO = Fraction(9, 5)
+    for C, fixos, minimos in [([5, 7, 11, 13, 31], {5: 2}, {}), ([5, 7, 11, 13, 31, 97], {5: 2}, {}),
+                              ([5, 7, 11, 13, 31, 97, 52361], {5: 2}, {7: 6, 11: 4}),
+                              ([5, 7, 11], {5: 2}, {}), ([5, 7, 11, 13, 31], {5: 2, 7: 2, 11: 2}, {})]:
+        prod_min, _ = _prod_min_sup(C, fixos, minimos)
+        q0 = _first_live_q(prod_min)
+        assert prod_min * _virtual(q0) <= ALVO
+        assert q0 == 2 or prod_min * _virtual(q0 - 1) > ALVO
+
+    def children(C, s, lo, fixos, hi, skip):
+        seen = []
+        real = omega_k._certifica
+
+        def spy(C_, s_, lo_, stats, f=None, m=None, mx=None, hi_=None):
+            if not seen:
+                seen.append("root")
+                return real(C_, s_, lo_, stats, f, m, mx, hi_)
+            seen.append((tuple(C_), s_, lo_, hi_))
+            return None
+
+        def decline(*a, **k):
+            raise NaoCertificavel("declined")
+
+        monkeypatch.setattr(omega_k, "_particao", decline)
+        monkeypatch.setattr(omega_k, "_certifica", spy)
+        if not skip:
+            monkeypatch.setattr(omega_k, "_first_live_q", lambda pm: 2)
+        omega_k._certifica(C, s, lo, StatsK(), fixos, {}, {}, hi)
+        monkeypatch.undo()
+        return seen[1:]
+
+    for C, s, lo, fixos, hi in [([5, 7, 11, 13, 31], 2, 31, {5: 2}, None), ([5, 7, 11, 13, 31], 1, 31, {5: 2}, None),
+                                ([5, 7, 11, 13, 31], 2, 31, {5: 2}, 150), ([5, 7, 11, 13, 31, 331], 1, 331, {5: 2}, None),
+                                ([5, 7, 11, 13, 31, 97], 2, 97, {5: 2}, 60000)]:
+        com = children(C, s, lo, fixos, hi, True)
+        sem = children(C, s, lo, fixos, hi, False)
+        assert com == sem, (C, s, hi)
+
+
+@pytest.mark.parametrize("cfg", [
+    {},                                   # default strategy
+    {"LIMIAR_INDICE": 10**12},            # never split, never use the finite exponent bound
+    {"LIMIAR_INDICE": 0},                 # split / bound wherever applicable
+    {"R_CHEAP_PROP9": 0},                 # no "cheap primes first" preference
+    {"FATORA_BITS": 40},                  # tiny factoring budget: more unfactored residues
+])
+def test_block7_verdict_does_not_depend_on_the_strategy(monkeypatch, cfg):
+    # the strategy thresholds only choose between sound alternatives: every variant
+    # must certify k = 6 and k = 7 (no friend, no NaoCertificavel); trees may differ
+    for name, value in cfg.items():
+        monkeypatch.setattr(omega_k, name, value)
+    for f in (omega_k._divisao_pequena, omega_k._classifica_cofator, omega_k._fatora, omega_k._phi_valor):
+        f.cache_clear()
+    for k in (6, 7):
+        st = certifica_omega(k, light=True)
+        assert st.amigos == [] and st.assinaturas_testadas == 0
+        assert st.pins == [] and st.conjuntos == [] and st.n_pins > 0     # light mode: counters only
+    if cfg == {"LIMIAR_INDICE": 0}:
+        assert st.splits > 0 and st.dead_hi > 0 and st.cor6_ramos > 0     # the new paths really ran
+    for f in (omega_k._divisao_pequena, omega_k._classifica_cofator, omega_k._fatora, omega_k._phi_valor):
+        f.cache_clear()
+
+
+def test_total_closure_lemma_needs_every_piece_examined(monkeypatch):
+    # Found by the adversarial panel of Block 7: sigma(5^210) = Phi_211(5) has degree
+    # 210 > GRAU_PHI_MAX, so the piece is skipped; with every known exponent fixed the
+    # total-closure lemma used to kill the node although "no new prime" was never
+    # verified. The lemma must not fire when a piece was skipped.
+    st = StatsK()
+    try:
+        casos = omega_k._particao([5], 15, 5, st, {5: 210}, {}, {})
+    except NaoCertificavel:
+        casos = "open"
+    assert st.fecho_total_mortos == 0
+    assert casos != []
+    # same node shape with every piece examined: the lemma still fires
+    monkeypatch.setattr(omega_k, "_novos_de_sigma", lambda *a, **k: ((), 0))
+    st = StatsK()
+    assert omega_k._particao([5, 7, 11], 2, 11, st, {5: 2, 7: 2, 11: 2}, {}) == []
+    assert st.fecho_total_mortos == 1
+
+
+def test_block7_ramos_expoente_dead_when_prod_min_exceeds_target():
+    # P0 > 9/5: the case is dead ([]), not a tail that leaves the node unchanged
+    from core.omega_k import _prod_min_sup, _ramos_expoente
+    C = [5, 7, 11, 13, 17]
+    assert _prod_min_sup(C, {5: 2}, {})[0] > Fraction(9, 5)
+    assert _ramos_expoente(C, {5: 2}, {}, {}) == []
+    assert _ramos_expoente(C, {5: 2, 7: 2, 11: 2, 13: 2, 17: 2}, {}, {}) == []     # no free prime
+    # with hi: the virtual factor alone can push a live node over the target
+    C = [5, 7, 11, 13, 31]
+    assert _prod_min_sup(C, {5: 2}, {})[0] < Fraction(9, 5)
+    assert _ramos_expoente(C, {5: 2}, {}, {}, 37) == []
+
+
+def test_block7_vacuous_hi_interval_is_dead():
+    # (19, 20] holds no prime: the smallest unknown cannot exist (reviewer's example)
+    st = StatsK()
+    omega_k._certifica([5, 7, 11, 19, 71], 2, 19, st, {5: 4}, {}, {}, 20)
+    assert st.dead_hi == 1 and st.nos == 1
+    # (19, 23] holds 23, but 23 in C leaves nothing either
+    st = StatsK()
+    omega_k._certifica([5, 7, 11, 19, 23], 2, 19, st, {5: 4}, {}, {}, 23)
+    assert st.dead_hi == 1 and st.nos == 1
+
+
+def test_block7_solver_declines_beyond_the_size_gate(monkeypatch):
+    # large ell: Phi_ell(U_max) would have (ell-1)·bits(U_max) bits; the solver must
+    # decline as a whole (None), never skip the single ell
+    from core.omega_k import _ultimo_desconhecido
+    C = [5, 7, 11, 13, 31]
+    ps = omega_k._prod_min_sup(C, {5: 2}, {})[1]
+    assert _ultimo_desconhecido(C, 31, {5: 2}, 0, 0, ps) is not None
+    monkeypatch.setattr(omega_k, "SOLVER_BITS", 10)
+    assert _ultimo_desconhecido(C, 31, {5: 2}, 0, 0, ps) is None
+    assert _ultimo_desconhecido(C, 31, {5: 2}, 0, 1, ps) is None
+
+
+def test_block7_index_loop_refuses_huge_spans(monkeypatch):
+    def decline(*a, **k):
+        raise NaoCertificavel("declined")
+
+    monkeypatch.setattr(omega_k, "_particao", decline)
+    monkeypatch.setattr(omega_k, "MAX_INDEX_SPAN", 50)
+    with pytest.raises(NaoCertificavel, match="MAX_INDEX_SPAN"):
+        omega_k._certifica([5, 7, 11, 13, 31], 2, 31, StatsK(), {5: 2}, {}, {}, None)

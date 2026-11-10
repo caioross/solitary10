@@ -35,6 +35,14 @@ Entry format:
   any new bound. The way forward (Block 7, PHASE_1.md §6.3): split the node into
   "smallest unknown ≤ B′" (a virtual factor I(B′²) in prod_min makes the tails die
   without enumeration) and "all > B′" (where Cor. 6 holds).
+- **Outcome (2026-11-10, Block 7):** the split was implemented and works: the node
+  {5,7,11,13,31,97,52361} closes in 57 nodes and 0.2 s, and the finite exponent bound
+  finally fires where it is valid (case (b), s = 2). Two further defects of this
+  block's code surfaced on the way: the bound L = 1 + 2·b·L₁ was valid but
+  astronomically loose once exponents are fixed or bounded (replaced by the exact
+  bound U₂ < 1 + 1/(R′_min − 1)), and the total-closure lemma ignored cyclotomic
+  pieces skipped by the size gates — latent unsoundness found by the adversarial
+  panel and closed (PHASE_1.md §7.3–7.4).
 
 ## [2026-09-10] Phase 1, Block 5 — almost-tight nodes with s = 2 (current dead end for ω = 9)
 

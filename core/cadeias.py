@@ -51,13 +51,13 @@ def v_p(q: int, n: int) -> int:
     return v
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=1 << 16)
 def ordem_mod(p: int, q: int) -> int:
     """ord_q(p): ordem multiplicativa de p módulo o primo q (exige q ∤ p)."""
     return int(n_order(p, q))
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=1 << 16)
 def _v_q_de_p_ordem_menos_1(q: int, p: int) -> int:
     """v_q(p^{ord_q(p)} - 1) por exponenciação modular: q^v | p^o - 1 sse
     p^o ≡ 1 (mod q^v). (A potência inteira p^o teria o·log2(p) bits — proibitivo
@@ -178,7 +178,7 @@ def sigma_fecha_em(p: int, a: int, conjunto: frozenset[int],
     return prod == alvo
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=1 << 16)
 def _divisores_impares_maiores_que_1(m: int) -> frozenset[int]:
     """Divisores ímpares > 1 de m, pela fatoração (sympy.divisors). A divisão por
     tentativa até sqrt(m) não escala: m pode ser uma ordem módulo um primo de
