@@ -148,6 +148,9 @@ def _conjunto_completo(S: list[int], stats: Stats6,
                        fixos: dict[int, int] | None = None) -> None:
     """Conjunto de primos fechado: FECHO de ordens + orçamentos + igualdade.
 
+    Precondition (always true inside the certifiers, unchecked for other callers):
+    S is sorted with S[0] = 5 and 3 not in S (a1 is read as the exponent of S[0]).
+
     listas : expoentes válidos por primo já calculados pelo chamador (omega_k os
              calcula sem fatorar r - 1 quando há um primo grande); None = calcular
              aqui por expoentes_validos_ordens (caminho do Bloco 2, inalterado).

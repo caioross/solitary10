@@ -79,7 +79,7 @@ PARTIÇÃO (Blocos 3-4), nesta ordem:
   5. COTA FINITA DE EXPOENTE (Bloco 6; Cor. 6 + Prop. 9 de Thackeray): num par
      aberto em que o índice degeneraria (prod_sup < 9/5 mas intervalo do próximo
      primo com mais de LIMIAR_INDICE primos), o expoente de um conhecido livre r
-     é limitado por A_r = v_r(num) - v_r(den) + níveis + Wieferich (comentário
+     é limitado por A_r = v_r(den) - v_r(num) + níveis + Wieferich (comentário
      longo antes de _min_residuo_teichmuller); ramifica-se a_r em {min_r, ..., A_r}
      EXATOS (cada filho fecha sigma(r^{a_r}) no passo 1) — sem cauda. A_r < min_r
      mata o caso. Escolhe-se o r com menos ramos.
@@ -139,8 +139,9 @@ BLOCK 7 — B_min SPLIT OF A NEAR-TIGHT NODE (written in English, as everything 
          prod_min·v(hi) in place of prod_min, because their limit prod_sup·v(hi)
          exceeds 9/5: the smallest unknown is never enumerated;
     (a2) U_1 = B    -> pin B (if B is a prime > lo outside C), lo := B, hi dropped;
-    (b)  U_1 > B    -> same node with lo := B (hi kept): all unknowns have an index
-         bound, which is where the finite exponent bound of step 5 is valid (s = 2).
+    (b)  U_1 > B    -> same node with lo := B (hi kept): U_2 gains an index bound; for
+         s = 2 that is every unknown, which is where the finite exponent bound of step 5
+         is valid; for s >= 3 the index enumeration of U_1 runs over the reduced interval.
   Inheritance of hi: children without pins inherit it; a child whose pins are all
   > hi keeps it (U_1 is still unknown); a child with a pin <= hi drops it (the
   pinned prime then contributes at least v(hi) to prod_min explicitly); children of
@@ -161,7 +162,7 @@ from math import gcd, isqrt
 from typing import NamedTuple
 
 from sympy import (cyclotomic_poly, divisors, factorint, integer_nthroot, isprime,
-                   nextprime, perfect_power, primerange)
+                   nextprime, primerange)
 
 from core.cadeias import (
     _candidatos_m,
@@ -210,9 +211,11 @@ ORDEM_BITS = 80           # (r-1) com mais bits: r é "grande" — nunca fatoram
 FATORA_BITS = 90          # acima disto, factorint do sympy pode nao terminar
 GRAU_PHI_MAX = 200        # cyclotomic_poly(d, q) com phi(d) > isto e proibitivo
 PIN_BITS = 20000          # Phi_d(q) com mais bits que isto nao e testado (gate exato)
-CACHE_MAX = 1 << 16       # bound of every memo cache (long runs must not grow without limit)
+CACHE_MAX = 1 << 16       # bound of the lru_cache memos here and in core/cadeias.py (long runs)
 SOLVER_BITS = 60_000      # last-unknown solver declines when Phi_ell(U_max) has more bits than this
 MAX_INDEX_SPAN = 2 * 10**8  # the index enumeration refuses (NaoCertificavel) wider intervals
+MAX_ASSIGNMENTS = 2_000_000  # _casos_ell refuses (NaoCertificavel) more budget assignments than this
+_PRUNE_FEEDERS = True     # tests only: False restores the unpruned enumeration of _casos_ell
 R_MAX_PROP9 = 1_000_000   # Prop. 9 custa O(r) exponenciacoes por nivel: acima disto, nao se aplica
 R_CHEAP_PROP9 = 2_000     # Cor. 6 bounds for r above this are computed only when no cheaper one exists
 LIMIAR_INDICE = 300       # intervalos do indice com ate isto primos sao enumerados; alem, Cor. 6
@@ -262,16 +265,50 @@ def _divisao_pequena(valor: int) -> tuple[tuple[int, ...], int]:
     return tuple(peq), c
 
 
+def _iroot(n: int, e: int) -> int:
+    """floor(n^(1/e)) for integers n >= 0, e >= 1: integer Newton iteration from above
+    (x_0 = 2^ceil(bits/e) >= n^(1/e); the iterates decrease strictly down to the floor
+    root). No floating point anywhere."""
+    if e == 1 or n < 2:
+        return n
+    x = 1 << -(-n.bit_length() // e)
+    while True:
+        y = ((e - 1) * x + n // x ** (e - 1)) // e
+        if y >= x:
+            return x
+        x = y
+
+
+def _prime_power_base(c: int) -> int | None:
+    """r if c = r^e with r prime and e >= 2, else None. Exact: for every e the floor
+    root is taken by _iroot and r^e == c is checked in integers. (sympy.perfect_power
+    filters odd exponents with a float comparison; a false negative there would turn a
+    prime power into "composite = 2 unknowns", i.e. a float inside a kill path.)
+    When no prime below 10^5 divides c (every real call: cofactors of _divisao_pequena
+    and their gcd refinements in _residue_unknowns),
+    r > 2^16 and e <= (bits(c) - 1)/16; otherwise every e < bits(c) is tried."""
+    bits = c.bit_length()
+    e_max = (bits - 1) // 16 if gcd(c, _primorial_pequeno()) == 1 else bits - 1
+    for e in range(2, e_max + 1):
+        r = _iroot(c, e)
+        if r < 2:
+            break
+        if r ** e == c and isprime(r):
+            return int(r)
+    return None
+
+
 @lru_cache(maxsize=CACHE_MAX)
 def _classifica_cofator(c: int) -> tuple[str, int]:
-    """("um", 0) | ("primo", c) | ("potencia", base prima) | ("composto", 0)."""
+    """("um", 0) | ("primo", c) | ("potencia", base prima) | ("composto", 0).
+    "potencia" is decided in exact integers (_prime_power_base)."""
     if c == 1:
         return ("um", 0)
     if isprime(c):
         return ("primo", int(c))
-    pp = perfect_power(c)
-    if pp and isprime(pp[0]):
-        return ("potencia", int(pp[0]))
+    base = _prime_power_base(c)
+    if base is not None:
+        return ("potencia", base)
     return ("composto", 0)
 
 
@@ -402,10 +439,12 @@ def _novos_de_sigma(p: int, a: int, permitidos: set[int], s: int,
     prod_{d | a+1, d > 1} Phi_d(p), peça a peça (cada Phi_d(p) tem phi(d)·log2(p)
     bits, muito menos que sigma(p^a)). extra = numero MINIMO de desconhecidos ainda
     nao identificados: 2 por peça com resto sem fatorar (restos de peças distintas
-    sao coprimos apos tirar os primos < 10^5: um primo comum a Phi_d(p) e Phi_d'(p)
-    divide d/d' <= a+1 < 10^5). None = morto (conhecidos + extra > s). Uma peça fora
-    dos gates de _phi_valor e apenas informacao a menos (contada em sem_fecho);
-    nunca levanta."""
+    sao coprimos apos tirar os primos < 10^5: a prime r common to Phi_d(p) and Phi_d'(p),
+    d < d', divides d' [d'/d is a power of r]; the examined pieces have phi(d) <=
+    GRAU_PHI_MAX, so every prime of d' is <= GRAU_PHI_MAX + 1 < 10^5 — it is the degree
+    gate, not the size of a + 1, that guarantees this). None = morto (conhecidos +
+    extra > s). Uma peça fora dos gates de _phi_valor e apenas informacao a menos
+    (contada em sem_fecho); nunca levanta."""
     novos: set[int] = set()
     extra = 0
     for d in divisors(a + 1):
@@ -509,7 +548,10 @@ def _expoentes_viaveis_unico(C: tuple[int, ...]) -> tuple[int, ...]:
 def _viavel_m0(k5: int, k3: int, C: list[int]) -> bool:
     """Existe a_U + 1 viável (único desconhecido U) múltiplo de m0 = 5^{k5}·3^{k3}?
     Sse os divisores > 1 de m0 admitem injeção em C com d | r - 1: a injeção de um
-    múltiplo restringe-se a m0, e m0 é o seu próprio múltiplo."""
+    múltiplo restringe-se a m0, e m0 é o seu próprio múltiplo.
+    For (k5, k3) = (0, 0) the answer is vacuously True (m0 = 1 has no divisor > 1) even
+    when no legal a_U + 1 >= 3 exists; the caller guards that case and only the kill
+    direction (False => no friend in the pair) is ever used."""
     divs = sorted(5**i * 3**j for i in range(k5 + 1) for j in range(k3 + 1)
                   if (i, j) != (0, 0))
     return _tem_atribuicao_injetiva(divs, C)
@@ -605,8 +647,9 @@ def _ultimo_desconhecido(C: list[int], lo: int, fixos: dict[int, int], k5: int, 
                          prod_sup: Fraction, hi: int | None = None) -> list[int] | None:
     """Candidatos finitos para o único desconhecido U num caso aberto (k5, k3);
     None se nenhuma cota limita o lado direito (prod_sup >= 9/5 com expoente livre
-    em C_ell, ou L(C) incompleto por primo grande). Block 7: with hi set, U <= hi is
-    one more bound on U (the only one when prod_sup >= 9/5)."""
+    em C_ell, ou L(C) incompleto por primo grande, or Phi_ell of the bound above
+    SOLVER_BITS bits: the whole solver declines, never a single ell). Block 7: with
+    hi set, U <= hi is one more bound on U (the only one when prod_sup >= 9/5)."""
     C_set = set(C)
     U_max = _cota_indice_U(prod_sup)
     if hi is not None:
@@ -658,7 +701,7 @@ def _ultimo_desconhecido(C: list[int], lo: int, fixos: dict[int, int], k5: int, 
 # Proposição 9 de Thackeray (arXiv:2310.15900), re-derivados na nossa notação.
 # ---------------------------------------------------------------------------
 #
-# Para r em S (r != 3):  v_r(sigma(N)) = a_r - v_r(num) + v_r(den)   [sigma(N) = num·N/den],
+# Para r em S (r != 3):  v_r(sigma(N)) = a_r + v_r(num) - v_r(den)   [sigma(N) = num·N/den],
 # e v_r(sigma(N)) = soma_{q em S, q != r} v_r(sigma(q^{a_q})). Com a_q par e o = ord_r(q)
 # (LTE):  contribuicao = v_r(a_q + 1)                       se o = 1 (q ≡ 1 mod r);
 #                      = w_r(q) + v_r((a_q + 1)/o)          se o impar > 1 e o | a_q + 1;
@@ -692,6 +735,10 @@ def _ultimo_desconhecido(C: list[int], lo: int, fixos: dict[int, int], k5: int, 
 # prod_{q fixo != 5} sigma(q^{a_q}) (ou 5·prod q com a1 livre), logo R - 1 >= 1/D(C') e, no
 # nivel seguinte, D cresce no maximo pelo fator L_anterior. Recursao exata em inteiros;
 # L = cota do ultimo.
+# (Block 7: the code no longer uses that recursion. For s = 2 and lo >= B_min it takes
+# U_min = the first prime > lo outside C, R'_min = R·(U_min - 1)/U_min > 1 and
+# L = floor(1 + 1/(R'_min - 1)), because sup(U_2) > R/sup(U_1) >= R'_min.
+# See _cota_L_desconhecidos.)
 # COTA: a_r <= v_r(den) - v_r(num) + soma_{q fixo} v_r(sigma(q^{a_q}))
 #            + soma_{q livre conhecido, o impar} [w_r(q)·[o > 1] + nivel_max(q)]
 #            + s · (omega_max(r, L) + nivel_max(desconhecido)).
@@ -986,6 +1033,40 @@ def _casos_ell(C: list[int], s: int, lo: int, ell: int, T: int,
     casos: list[tuple] = []
     sem_fecho = sem_fecho if sem_fecho is not None else [0]
 
+    # PER-FEEDER CAP (exact pruning). _fecha kills an assignment as soon as some q has
+    # more than s levels j <= k_q without a witness in C, a test that depends only on
+    # (q, k_q) and is monotone in k_q. So k_max[q] = the largest k <= T with at most s
+    # witness-less levels among 1..k, and rec never builds an assignment beyond it: the
+    # case list is identical, and the cost drops from C(T + c, c) assignments (c free
+    # feeders; 3.9·10^8 at the k = 9 node with a1 = 54) to at most prod (k_max[q] + 1).
+    k_max: dict[int, int] = {}
+    for q in conhecidos:
+        k, faltando = 0, 0
+        while _PRUNE_FEEDERS and k < T:
+            if not any(_ordem_e_potencia(q, r, ell, k + 1) for r in C if r != q):
+                if faltando == s:
+                    break
+                faltando += 1
+            k += 1
+        k_max[q] = k if _PRUNE_FEEDERS else T
+    total = 1
+    for q in conhecidos:
+        if q not in fixos:
+            total *= k_max[q] + 1
+    if _PRUNE_FEEDERS and total > MAX_ASSIGNMENTS:
+        # the product ignores sum k_q <= T: count the vectors exactly before refusing
+        # (ways[t] = number of vectors over the free feeders seen so far with sum t)
+        ways = [1] + [0] * T
+        for q in conhecidos:
+            if q not in fixos:
+                ways = [sum(ways[t - k] for k in range(min(k_max[q], t) + 1))
+                        for t in range(T + 1)]
+        total = sum(ways)
+        if total > MAX_ASSIGNMENTS:
+            raise NaoCertificavel(
+                f"C={C}, s={s}, ell={ell}, T={T}: {total} budget assignments "
+                f"(MAX_ASSIGNMENTS = {MAX_ASSIGNMENTS})")
+
     def aberto(restante: int) -> None:
         if restante == 0:
             casos.append(("aberto", 0))
@@ -1047,9 +1128,11 @@ def _casos_ell(C: list[int], s: int, lo: int, ell: int, T: int,
             k_fixo = v_p(ell, fixos[q] + 1)
             if k_fixo > restante:
                 return                      # morto: estoura o orçamento
+            if k_fixo > k_max[q]:
+                return                      # dead: more witness-less levels than s
             ks: range | list[int] = [k_fixo]
         else:
-            ks = range(0, restante + 1)
+            ks = range(0, min(restante, k_max[q]) + 1)
         for k in ks:
             if k:
                 assign[q] = k
@@ -1068,7 +1151,8 @@ def _ramos_expoente(C: list[int], fixos: dict[int, int], minimos: dict[int, int]
                     maximos: dict[int, int] | None = None,
                     hi: int | None = None) -> list[Ramo] | None:
     """Ramificação por expoente com cauda (passo 4 do cabeçalho). None sse
-    prod_sup <= 9/5 (nenhuma cauda mata; o índice é o caminho). Com cota superior
+    prod_sup <= 9/5 (no tail kills; the index is the way when prod_sup < 9/5, and
+    with exact equality the node ends in NaoCertificavel). Com cota superior
     M_q (maximos) o ganho de q é I(q^{M_q})/I(q^{min_q}) e a cauda a_q >= A só existe
     se A <= M_q (senão os ramos exatos até M_q já cobrem tudo).
     Block 7: with hi set, the constant virtual factor v(hi) multiplies prod_min and
@@ -1335,7 +1419,10 @@ def _expoentes_com_primo_grande(p: int, S_peq: frozenset[int], r: int,
             m = ell * e
             if m in D or m in cand:
                 continue
-            proprios = [d for d in _divisores_impares_maiores_que_1(m) if d != m]
+            # divisors of ell·e = divisors(e) + ell·divisors(e): e is an order modulo
+            # a small prime (already factored); ell·e itself (up to ~160 bits) is not
+            div_e = _divisores_impares_maiores_que_1(e)
+            proprios = (div_e | {ell} | {ell * d for d in div_e}) - {m}
             if all(d in D for d in proprios) and _e_ordem(p, r, m):
                 cand.add(m)
     # (B1) primo: p^{ell-1} < Phi_ell(p) <= ell · r^{A_r}. Impossível assim que
@@ -1430,8 +1517,9 @@ def _certifica(C: list[int], s: int, lo: int, stats: StatsK,
             return
 
     if s == 0:
-        # I(N) >= prod_min (igualdade = candidato vivo) e I(N) < prod_sup (estrito
-        # se algum expoente é livre; com todos fixos I(N) = prod_min = prod_sup)
+        # I(N) >= prod_min (equality = live candidate) and I(N) <= prod_sup, strict iff
+        # some free prime has no upper bound (the factor p/(p-1) is not attained; fixed
+        # exponents and maximos give attainable factors)
         if prod_min > _o6.ALVO or (prod_sup < _o6.ALVO) or (
                 prod_sup == _o6.ALVO and any(q not in fixos and q not in maximos for q in C)):
             stats.completos_mortos_indice += 1

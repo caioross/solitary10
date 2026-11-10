@@ -1,6 +1,6 @@
 # RESULTS — labelled statements (rigour rules: `docs/METHODOLOGY.md`)
 
-Last update: 2026-09-12 (Phase 1, Block 6). Details: `PHASE_0.md`, `PHASE_1.md`.
+Last update: 2026-11-10 (Phase 1, Block 7). Details: `PHASE_0.md`, `PHASE_1.md`.
 
 ## Notation
 
@@ -72,6 +72,9 @@ tightening defect (a₁ committed but left out of the index bounds), not missing
 recorded in FAILURES.md. The label of H (ω ≥ 7) continues to rest on Block 2; I only
 moves up in label after the recursive certifier's own adversarial pass (targets listed in
 PHASE_1.md §4.8 and §5.5).
+[Block 7: that pass was carried out (PHASE_1.md §7.4). The counts in row I are those of
+Block 4; the current trees have 459 nodes (ω = 7) and 18 390 nodes (ω = 8). Result I is
+now the k ≤ 8 part of Result J below and carries its label.]
 
 ## Phase 1, Block 5 — the last unknown by cyclotomic equations (PHASE_1.md, Block 5)
 
@@ -80,7 +83,7 @@ witness in C, finite right-hand side, U by exact integer root) replaces the inde
 enumeration of the last unknown; verified against independent brute force. k = 8 drops
 from 210 456 to 90 032 nodes (36 s), same verdict. k = 9 stays blocked by almost-tight
 nodes with **two** unknowns (FAILURES.md), the regime in which Thackeray spent 25 h of
-CPU; 12 h of brute force were not enough.
+CPU; 12 h of brute force were not enough. *(Superseded in Block 7.)*
 
 ## Phase 1, Block 6 — Cor. 6 + Prop. 9 (PHASE_1.md, Block 6)
 
@@ -91,7 +94,31 @@ bound L on the unknowns was caught by the test comparing it with the real index 
 closed; in its sound form the bound never fires for k ≤ 8 (same tree as Block 5). The code
 keeps `maximos` (inherited upper bounds) and the total-closure lemma. k = 9 remains
 open; the diagnosis of §6.3 (partition by B′ with a virtual factor in the tails) is the
-candidate Block 7.
+candidate Block 7. *(Superseded in Block 7: k = 9 is certified, Result J, and with the
+split the bound fires at k = 8 too, 17 branchings.)*
+
+## Phase 1, Block 7 — split at B_min, adversarial pass, ω = 9 (PHASE_1.md, Block 7)
+
+| # | Statement | Label |
+|---|---|---|
+| J | **Every friend of 10 has ω(N) ≥ 10** (no friend has ω = 9: 2 298 715 nodes, 22 653 splits at B_min, 44 403 branchings by the finite exponent bound, 201 complete sets with a large prime, zero friends, zero `NaoCertificavel`, about 6 minutes on one core; k ≤ 8 as in I) | `[PROVED-CONDITIONAL: Theorems A–D and Lemmas/Fact 0 of Phase 0 + Zsygmondy, LTE and the Nielsen/Voight valuation formula (classical) + correctness of core/omega_k.py, core/cadeias.py and core/omega6.py (adversarial passes PHASE_1.md §2.5 and §7.4 and replay audit §7.6, with the limits listed there: no end-to-end planted friend through the 9/5-specific partition; BPSW primality above 2⁶⁴) and of the primitives ALVO, I_pp, sigma_pp and sup_pp they import from core/motor.py (Block 1 engine, adversarial pass PHASE_1.md §1.5) + correctness of sympy.n_order/factorint/isprime/nextprime/primerange/integer_nthroot/cyclotomic_poly/divisors/totient in the calls consumed]` |
+
+Context for J: **not new** — it is Thackeray's theorem (arXiv:2310.15900, about 25 h of
+CPU there, almost all in k = 9). The value is an independent reproduction of the state of
+the art by a different method and implementation, in minutes, and a certifier that has
+now been attacked (ten claims of the block twice each, on the pre-split code with the
+reviewers' own prototypes of the split; eleven accumulated targets on the first commit of
+the block; every claimed refutation re-examined twice there; the three code changes made
+after that commit sent to two further reviewers; no false kill or false certificate
+found; six defects found and closed, two of them latent soundness holes that no completed
+run had triggered — PHASE_1.md §7.4, FAILURES.md), and whose k = 9 run has been replayed
+and re-derived
+decision by decision, family by family, with no defect claimed (PHASE_1.md §7.6). The
+finite exponent bound it uses is Thackeray's own (Cor. 6 and Prop. 9). **Not
+load-bearing**: E, E′ and G keep citing the published theorem. A statement beyond the
+literature (ω(N) ≥ 11, i.e. k = 10) is NOT claimed and needs, first, a target-generic
+partition for end-to-end planted tests and an adversarial pass of the final code as a
+whole (PHASE_1.md §7.7).
 
 ## Numerical verifications
 
@@ -104,7 +131,7 @@ candidate Block 7.
 ## Corrections to the literature (full catalogue: `results/ERRATA.md`)
 
 Re-verified on 2026-08-21 in a second independent pass, on the verbatim arXiv text, with
-certificates in `experiments/verifica_erratas.py` and `tests/test_erratas.py` (28 tests).
+certificates in `experiments/verifica_erratas.py` and `tests/test_erratas.py` (29 tests).
 Publication material: `publication/`.
 
 | Finding | Label |

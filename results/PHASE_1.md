@@ -1,7 +1,7 @@
 # Phase 1 — A certified computational frontier
 
 Opened on 2026-08-20 after the closing of Phase 0. This file is the running report of
-the phase; block by block, with a human checkpoint between blocks.
+the phase; block by block, with a checkpoint between blocks.
 
 Script outputs quoted below are verbatim; the scripts themselves still print in
 Portuguese pending the code-side migration.
@@ -149,7 +149,7 @@ covered by a test (`test_shards_por_p2_cobrem_exatamente_a_varredura_inteira`).
 
 Cost to go further: ~10×/decade in CPU (10³⁴ ≈ 3 h sharded; 10³⁶ ≈ 30 h). Before
 spending that, it is worth porting the hot loop to pure integers/PyPy or using the
-congruence prunings of Block 2 — a decision for the human checkpoint.
+congruence prunings of Block 2 — a decision for the next checkpoint.
 
 ### 1.5 Adversarial pass on the engine
 
@@ -315,7 +315,7 @@ Block 1), closed by pinning with P ∈ {31, 3221}.
 ### 2.5 Adversarial pass on Block 2
 
 Five independent reviewers, instructed to BREAK the ω = 6 certification. Three finished
-in this round (two were cut by a session limit and relaunched):
+in this round; the other two reviews were interrupted and redone:
 
 | Target | Verdict | Summary |
 |---|---|---|
@@ -539,6 +539,9 @@ prime, in both bounds) and, in complete sets, allows killing for free before the
 exponent phase: prod_min > 9/5, or prod_sup ≤ 9/5 with some free exponent (I(N) < prod_sup
 strictly), or prod_sup < 9/5 with all fixed. At k = 6 the 22 complete sets all die there
 (`completos_mortos_indice = 22`, 51 nodes, 0 leaves).
+[Precision added in Block 7: since exponents can carry upper bounds (`maximos`,
+Block 6), the inequality I(N) < prod_sup is strict exactly when some free prime has
+*no* upper bound; the code tests that condition.]
 
 Lesson (FAILURES.md, outcome of the Block 3 entry): before asking for new theory, check
 that every piece of information already committed in the branch enters ALL the prunings.
@@ -593,7 +596,8 @@ p^ℓ ≡ 1 mod r). The valuations of the reconstruction are the direct ones of 
 large primes in the same set: `NaoCertificavel`.
 
 Validation: forcing `ORDEM_BITS = 12` in the tests, the real complete sets of k = 7 with
-exactly one "large" prime (≥ 20 sets) produce through the new route **exactly** the
+exactly one "large" prime (13 sets with the current tree; the test requires ≥ 10 —
+corrected in Block 7, the text said ≥ 20) produce through the new route **exactly** the
 lists of the direct route (`expoentes_validos_ordens`); and the prime case (B1) is
 exercised in {5,7,11,13,31}+19 (ord₁₉(7) = 3, 3 is not an order of 7 modulo any other
 prime of the set; σ(7²) = 3·19 closes). Honesty: for k ≤ 8 no prime of a complete set
@@ -664,9 +668,12 @@ Two iterations until the right semantics:
    composite remainder beyond the budget guarantees ≥ 2 new primes not yet identified (a
    composite that is not a prime power, coprime to the allowed and to the identified
    ones): death if they do not fit in the slots. Distinct pieces of σ(p^a) have coprime
-   remainders (a prime common to Φ_d(p) and Φ_{d′}(p) divides d/d′ ≤ a + 1 < 10⁵), so
+   remainders (a prime common to Φ_d(p) and Φ_{d′}(p), d < d′, divides d′; the examined
+   pieces have φ(d′) ≤ `GRAU_PHI_MAX` = 200, so that prime is at most 199 and the small
+   division removes it — corrected in Block 7: the text justified this by
+   "≤ a + 1 < 10⁵", a bound on a that the code never enforces), so
    they count 2 each; remainders of distinct bases may share primes and count 2 in
-   total. A piece beyond the Φ gates (`PIN_BITS`, `GRAU_PHI_MAX`) is just less
+   total (refined in Block 7 by a coprime base, §7.3). A piece beyond the Φ gates (`PIN_BITS`, `GRAU_PHI_MAX`) is just less
    information (`casos_sem_fecho` in the statistics). No exception leaves the partition
    any more; `NaoCertificavel` is reserved for the node with no way out (an open case
    with no branch and no index) and for the complete set with two large primes.
@@ -909,7 +916,9 @@ bound. The diagnosis of why is the main product of the block and defines Block 7
 
 ### 6.1 Corollary 6 re-derived (header of `core/omega_k.py`, block "FINITE bound")
 
-For r ∈ S (r ≠ 3): v_r(σ(N)) = a_r − v_r(num) + v_r(den) = Σ_{q ≠ r} v_r(σ(q^{a_q})), and
+For r ∈ S (r ≠ 3): v_r(σ(N)) = a_r + v_r(num) − v_r(den) = Σ_{q ≠ r} v_r(σ(q^{a_q}))
+[σ(N) = num·N/den; sign corrected in Block 7 — the text had − v_r(num) + v_r(den), which
+contradicts the bound below and gives a₁ + 1 instead of a₁ − 1 for r = 5], and
 with a_q even and o = ord_r(q) (LTE): the contribution of q is v_r(a_q + 1) if o = 1;
 w_r(q) + v_r((a_q+1)/o) if o is odd > 1 and o | a_q + 1; 0 otherwise, where
 w_r(q) = v_r(q^o − 1) ≥ 1 is the Wieferich level of q at r.
@@ -936,8 +945,13 @@ w_r(q) = v_r(q^o − 1) ≥ 1 is the Wieferich level of q at r.
 Verification: `test_prop9_nivel_wieferich_contra_forca_bruta` (r ≤ 31, primes up to
 10⁵: real w_r(q) ≤ bound; every q < m_a(r) has level < a; 3¹⁰ ≡ 1 mod 11² ⟹ w₁₁(3) = 2),
 `test_cor6_majora_os_expoentes_de_amigos_plantados` (at partial nodes of three planted
-signatures the bound is ≥ the true exponent), and the bound for 5 reproduces the
-universal one of Block 3.
+signatures the bound is ≥ the true exponent).
+[Corrected in Block 7: this paragraph ended with "the bound for 5 reproduces the
+universal one of Block 3". It does not. Mathematically r = 5 has no Wieferich term,
+but the code adds s·ω_max(5, L) for the unknowns all the same, so for s ≥ 1 its bound
+for 5 is looser than the universal one (and for s = 0 it can be smaller, e.g. 4
+against 7 at C = {5, 11, 31, 41}). The claim was never tested and is inert: 5 is always
+committed where Cor. 6 is called, so r = 5 is never bounded this way.]
 
 ### 6.2 The soundness hole in the bound L on the unknowns — caught by the test
 
@@ -956,7 +970,8 @@ Before that, an intermediate version (raw denominator 5·σ(5^{a₁})·∏q, whi
 after a large fixed exponent (b ∋ σ(31⁴⁰)) that k = 8 went from 18 s to > 10 min.
 
 Final, sound version: L only exists when every unknown is bounded without a partition
-— s = 1 (L = L₁) or s = 2 with lo ≥ B_min (then L = 1 + 2·b·L₁); s ≥ 3 → no L.
+— s = 1 (L = L₁) or s = 2 with lo ≥ B_min (then L = 1 + 2·b·L₁; replaced in Block 7 by
+the exact bound of §7.3, item 4); s ≥ 3 → no L.
 `_ramos_cor6` refuses in the other cases. With that the bound **never fires** for k ≤ 8
 (`cor6_ramos = 0`): the almost-tight nodes always have lo < B_min. The k = 8 tree
 returns to the 90 032 nodes of Block 5 (same verdict).
@@ -973,7 +988,8 @@ no pins).
 
 ### 6.3 Why the index degenerates, exactly, and how to break it (Block 7)
 
-At the almost-tight node {5,7,11,13,31,97,52361} + U₁ + U₂ (a₁ = 2, R − 1 = 1.76·10⁻⁸):
+At the almost-tight node {5,7,11,13,31,97,52361} + U₁ + U₂ (a₁ = 2, prod_sup = 9/5 − 1.76·10⁻⁸,
+R − 1 = 9.76·10⁻⁹ [corrected in Block 7: the text gave 1.76·10⁻⁸ as R − 1]):
 B_min = 1.03·10⁸ and L₁ = 2.05·10⁸. The half (B_min, L₁] has a bound L₂ and Cor. 6
 would apply; the half (lo, B_min] — 5.9 million primes — is where prod_sup·sup(U₁)
 ≥ 9/5, and each child goes to the tails. The enumeration is in the "unbounded" half,
@@ -1001,3 +1017,486 @@ No new statement; ω(N) ≥ 9 (Result I) keeps the conditional label; k = 9 rema
 (levels, Wieferich, the sign v_r(den) − v_r(num)); (x) the bound L and the condition
 lo ≥ B_min; (xi) the total-closure lemma (the integrality of K and the exclusion of the
 case x integer by the target 9/5).
+
+---
+
+## Block 7 — Splitting near-tight nodes at B_min; adversarial pass of the recursive certifier; ω = 9 closes
+
+Approved objective (§6.3): stop enumerating the smallest unknown prime at near-tight
+nodes by splitting on its position relative to B_min. Delivered, together with seven
+further tightenings that the k = 9 runs forced one after another, with the adversarial
+pass that `core/omega_k.py` had been owing since Block 4, and with a replay audit of the
+k = 9 run itself. Outcome: **k = 9 is certified (2 298 715 nodes, 0 friends, no refusal,
+about 6 minutes on one core)**, which reproduces the state of the art ω(N) ≥ 10 of
+Thackeray (arXiv:2310.15900) by a different method. Nothing here is new mathematics
+about the number 10; what is new with respect to the earlier blocks is that the
+certifier now reaches the frontier of the literature, and that it has been attacked.
+
+### 7.1 The state field `hi` and the virtual factor
+
+The state becomes (C, s, lo, fixos, minimos, maximos, hi). `hi` (None or an integer)
+means "s ≥ 1 and the smallest unknown U₁ satisfies U₁ ≤ hi". Write
+v(h) = 1 + 1/h + 1/h² (= I(h²) for h prime; decreasing in h).
+
+- **Virtual factor.** With hi set, I(N) ≥ prod_min · v(hi): I(U₁^a) ≥ I(U₁²) ≥ v(hi), every
+  other unknown contributes a factor > 1, and every known prime at least its prod_min
+  factor. The node is dead if prod_min·v(hi) > 9/5, or = 9/5 with s ≥ 2; also if
+  s = 0, or if (lo, hi] holds no prime outside C.
+- **Index facts.** Let prod_sup < 9/5, R = (9/5)/prod_sup, B = ⌊1 + 1/(R−1)⌋. For an
+  integer U ≥ 2: prod_sup·sup(U) ≥ 9/5 ⟺ U ≤ B. Moreover v(B−1) = sup(B) + 1/(B−1)², so
+  prod_sup·v(B−1) > 9/5, while prod_sup·v(h) < 9/5 for every h > B.
+
+### 7.2 The split and why each side closes
+
+At an open (k₅, k₃) pair with s ≥ 2, lo < B − 1 (and B − 1 < hi if hi is already set),
+where the tails and Cor. 6 both decline and the index interval of U₁ is long (more
+than `LIMIAR_INDICE` = 300 primes; a strategy threshold, both alternatives are
+sound), every friend lies in exactly one of:
+
+| case | hypothesis | child | why it closes |
+|---|---|---|---|
+| (a) | U₁ ≤ B − 1 | same node, hi := B − 1 | the tails of Block 4 apply with prod_min·v(hi) in place of prod_min: their limit prod_sup·v(B−1) exceeds 9/5 |
+| (a2) | U₁ = B | pin B (if prime, > lo, ∉ C); lo := B; hi dropped | ordinary pin |
+| (b) | U₁ > B | same node, lo := B (hi kept) | prod_sup·sup(U₁) < 9/5, so U₂ has an index bound as well as U₁. For s = 2 that is every unknown, which is exactly where the finite exponent bound of Block 6 is valid; for s ≥ 3 the later unknowns need not have one, and the child enumerates U₁ over the reduced index interval above B (§6.3) |
+
+Inheritance of hi: children without pins inherit it; a child whose pins are all > hi
+keeps it (U₁ is still unknown; if no unknown is left the child is dead); a child with
+a pin ≤ hi drops it (the pinned prime then contributes at least v(hi) to prod_min
+explicitly); the children of the index enumeration drop it, and that loop stops at hi.
+With s = 1 and hi set, the last-unknown solver of Block 5 uses U_max = min(hi, index
+bound), and applies even when prod_sup ≥ 9/5. Every node that carries hi has a₁
+already committed, so its prod_min and prod_sup are those of the node itself.
+
+Termination: order nodes by (s, number of free known exponents). Pins decrease s;
+exact branches and a₁ commitments decrease the second entry; tail chains are finite (m
+decreases; hi and prod_sup are unchanged along them, so no split occurs inside); after
+a split no second split occurs before (s, free) decreases — after (a) the tails apply,
+after (b) the precondition lo < B − 1 fails and prod_sup·v(hi) < 9/5 for hi > B. The
+kill of the virtual factor runs at node entry, before the tail step (otherwise a node
+with prod_min·v(hi) > 9/5 would produce a tail equal to itself).
+
+Effect on the node that defeated Blocks 5 and 6, C = {5,7,11,13,31,97,52361}, s = 2,
+a₁ = 2 (prod_sup = 9/5 − 1.76·10⁻⁸, R − 1 = 9.76·10⁻⁹, B = 102 507 528): before, an
+enumeration of ~11 million primes (hours); now **54 nodes, 0.1 s**, with the index
+enumeration never used (`test_block7_near_tight_k9_node_closes_without_enumeration`).
+(The message of the first commit of this block says 57 nodes and 0.2 s; that was the
+count before tightening 4 of §7.3.) In case (a) the margin is tiny (v(B−1) exceeds
+sup(B) by 1/(B−1)² ≈ 10⁻¹⁶), so every free prime has to be pushed by a tail — six tail
+edges, with thresholds a₅₂₃₆₁ ≥ 4, a₉₇ ≥ 8, a₃₁ ≥ 10, a₁₃ ≥ 14, a₁₁ ≥ 16, a₇ ≥ 20 — and
+each exact branch dies at its closure or one node later (25 of the 30 at the closure;
+the other 5 pin one new prime, and that child, with s = 1, dies without descendants).
+
+Precision about the title of the proposal: the smallest unknown is no longer
+enumerated *at the split*. Short index intervals (up to `LIMIAR_INDICE` primes) are
+still enumerated, also under hi (9 such nodes at k = 8, up to 256 primes each).
+
+### 7.3 Seven tightenings forced by k = 9
+
+Each was found by a stack watchdog on a stalled k = 9 run, or by the adversarial pass
+of §7.4; each is sound on its own.
+
+1. **Prop. 9 incrementally.** The Teichmüller lifts are compatible across levels: if
+   x ≡ y^{r^{a−1}} (mod r^a) then x^r ≡ y^{r^a} (mod r^{a+1}). One exponentiation by r per
+   residue and level replaces exponents r^{a−1}; only the minima m_a(r) are cached.
+   Checked against the direct definition
+   (`test_teichmuller_minima_match_the_direct_definition`). Near-tight node: 38 s → 3 s.
+2. **Cheap primes first in the Cor. 6 branching.** The Prop. 9 term costs O(r) per
+   level. In case (b) lo is huge, so exact branches of small primes die at once (their
+   pins would have to exceed lo); the bound of an expensive prime
+   (r > `R_CHEAP_PROP9` = 2000) is computed only if no cheap prime can be branched.
+   3 s → 0.2 s.
+3. **Coprime-base refinement of unfactored residues.** A composite cofactor beyond
+   the factoring budget hides ≥ 2 unknown primes. Residues of *different* closures may
+   share primes with each other and with pins identified elsewhere. Residues and pins
+   are now refined into a pairwise coprime base by gcds: coprime residues add up (two
+   coprime residues need ≥ 4 unknown primes — dead with s ≤ 3), and a common factor
+   is revealed and becomes a pin. k = 8, measured with the Block 6 bound L still in
+   place (before item 4): 72 945 → 18 551 nodes; with the exact L of item 4 the k = 8
+   tree has 18 390 nodes with or without this refinement. The refinement also closed
+   a false kill latent since Block 4 (§7.4, defect 2).
+4. **Exact bound L for s = 2.** Block 6 used L = 1 + 2·b·L₁ with b the reduced
+   denominator of R − 1 — valid, but b is astronomically large once exponents are fixed
+   or bounded (b ~ 10²⁶⁰ at real nodes), which made the Wieferich levels useless and
+   slow. With lo ≥ B: U₁ ≥ U_min (least prime > lo outside C), so
+   R′ = R(U₁−1)/U₁ ≥ R(U_min−1)/U_min > 1 and U₂ < 1 + 1/(R′_min − 1): of the order of
+   L₁², no denominators. The test compares it with the real index loop of every child
+   and checks it is nearly attained at the first child.
+5. **Dead prefix of the index loop skipped exactly.** Every q below the least q with
+   prod_min·v(q) ≤ 9/5 gives a dead child; that q is computed by an integer square
+   root (`_first_live_q`) instead of walking the primes. Equivalence with the unskipped
+   loop is tested on five nodes.
+6. **Memory.** A k = 9 run grew to 2.8 GB: the statistics kept every complete set and
+   every pin, and the memo caches were unbounded. Long runs use a light mode (counters
+   only) and the `lru_cache` memos of `core/omega_k.py` and `core/cadeias.py` are
+   bounded to 2¹⁶ entries (`I_pp`/`sup_pp` of `core/motor.py` and the Teichmüller minima
+   stay unbounded, and small); the run stays near 100 MB.
+7. **Per-feeder cap in the budget enumeration.** The partition by the v₅ budget
+   enumerated every vector (k_q) over the known primes ≡ 1 (mod 5) with Σ k_q ≤ a₁ − 1,
+   that is C(T + c, c) vectors, and only then tested each. At the child a₁ = 54 of the
+   k = 9 root (σ(5⁵⁴) has exactly the primes 11, 71, 103511, 511831, 12207031,
+   65628751, 190295821; T = 53, c = 7) that is C(60, 7) = 386 206 920 vectors — about
+   three hours inside one node, silently (extrapolated: the 18 643 560 vectors of the
+   a₁ = 34 node took 581 s). But the first test applied to a vector (more than s
+   levels of q without a witness in C) depends only on (q, k_q) and is monotone in
+   k_q, so the largest admissible k_q is computed once per feeder and the enumeration
+   never goes beyond it. The case list is
+   identical (tested on every affordable real call of the k ≤ 7 trees and on the whole
+   k = 7 tree); the two nodes above take 0.1 s; k = 8 drops from 15–23 s to 2 s with
+   the same 18 390 nodes. A guard (`MAX_ASSIGNMENTS`) turns any remaining blow-up into
+   an honest refusal, after counting the vectors exactly. A side effect on the
+   statistics only: `casos_sem_fecho` now counts fewer cases (28 against 41 at k = 7,
+   338 against 467 at k = 8), because pruned vectors no longer reach that counter.
+
+### 7.4 Adversarial pass of the recursive certifier
+
+Set-up: independent reviewers, each on a frozen copy of the code, exact arithmetic
+only, instructed to refute and to report anything they could not check. Ten claims of
+this block (index facts, completeness of the split, virtual factor, tails under hi,
+pin rules, index under hi, solver under hi, termination, the lo invariant, strategy
+independence) were each attacked twice, once as mathematics and once against the
+code. Their frozen copy was the commit *before* this block (the Block 6 code, without
+`hi` and without the split): the claims were attacked as a specification, against the
+machinery they extend and against models and prototypes of the split written by the
+reviewers, not against the implementation. The eleven targets accumulated since
+Block 4 (§4.8 (i)–(vii), §5.5 (viii), §6.4 (ix)–(xi)) were attacked once each, on the
+first commit of this block. Every claimed refutation went to two further reviewers,
+also on that commit, instructed to dismiss it if they could.
+
+**Verdicts.** No false kill and no false certificate were found in the code as
+committed. Claims: 19 of 20 reviews not refuted; they speak for the mathematics and
+the design of the split, not for its implementation. The remaining review (claim 10,
+code) reported two holes of the older code, both real there (defects 1 and 2 below);
+both were closed in the first commit of this block, which is why the two second
+reviewers, working on that commit, dismissed the refutation. Targets: 9 of 11 not
+refuted; 2 refutations confirmed twice, neither about soundness (defects 4 and 6).
+
+| Target | Verdict | Decisive evidence reported |
+|---|---|---|
+| (i) tails (`_ramos_expoente`) | not refuted | ~150 000 random states (30 925 branching), the 869 real calls of k ≤ 8, ~1 900 planted runs through a generic partition, three mutants all detected |
+| (ii) witness count and forced k (`_casos_ell`) | sound; **stall confirmed** | ~91 000 model-based trials with planted consistent configurations, exact comparison with an independent specification on 3 670 real nodes; the silent stall of tightening 7 |
+| (iii) `_viavel_m0` | not refuted | 230 160 calls against an independent Hall test; the 5 208 real kills of k ≤ 8 re-checked by brute force over the primes of an interval |
+| (iv) closures, residues and gates | not refuted; **float found** | 80 064 closure calls against full factorisation over four factoring budgets; gate monotonicity on ~6 000 real nodes; defect 3 |
+| (v) complete sets (s = 0) | not refuted | 21 807 list comparisons with brute force; 16 439 planted runs including the equality cases |
+| (vi) large-prime lemma | not refuted | ~6 900 closure-built sets covering every case of the lemma; 930 planted runs |
+| (vii) a₁ bound, "pin ≤ lo is dead" | not refuted | instrumented runs k ≤ 8 (18 921 nodes, 0 violations of five invariants); differential of the real partition on 6 185 nodes |
+| (viii) last-unknown solver | not refuted | 1 257 planted (U, a) with 4 626 solver calls; 2 500 random C against full brute force; replay of the 706 real calls of k = 8 |
+| (ix) Cor. 6 | code sound; **written derivation wrong** | ~113 000 planted-node checks of A_r ≥ a_r, ~9 400 firings on planted s = 2 nodes; defect 6 |
+| (x) bound L, lo ≥ B_min, Prop. 9 | not refuted | 5 147 nodes against exact extremal search; ~4 000 planted N₀ built from Wieferich gadgets; the 17 real firings of k = 8 recomputed independently |
+| (xi) total-closure lemma | not refuted (and inert) | 2 494 random all-fixed states against full factorisation; 0 firings in 371 938 partitions of a partial, time-boxed k = 9 run (the complete run of §7.5 also has 0, in 1 338 903 partitions) |
+
+**Defects found, all fixed in this block.**
+
+1. *Total-closure lemma with skipped pieces (latent unsoundness, since Block 6).* The
+   lemma needs "no σ(q^{a_q}) has a prime outside C ∪ {3}", but a cyclotomic piece
+   skipped by the size gates was treated as examined: C = {5, 31} with a₃₁ = 210 was
+   declared dead although 2111 and 4643 divide σ(31²¹⁰). The lemma now requires every
+   piece of every fixed prime to have been examined. It never fired in any run
+   (`fecho_total_mortos = 0` for k ≤ 9), so no certificate depended on it.
+2. *Order-dependent double count (latent unsoundness since Block 4; found on the
+   Block 6 code).* A pin identified from a later fixed prime that divides the
+   unfactored residue of an earlier one was counted twice (1 + 2 > s): with C = {5,7,11,13,31,97,60013,20849069},
+   s = 2 and the fixed exponents taken in the order (5², 20849069⁴, 97⁴) the node was
+   declared dead, although its closure needs exactly the two new primes 262321 and
+   720300353869246791671341 and the node is index-alive; in the order (5², 97⁴,
+   20849069⁴) it was not. Tightening 3 had already removed it when the reviewer found
+   it on the older code; both second reviewers then failed to revive it (53 640
+   node-and-order checks on 3 492 fuzzed nodes, and 7 500 fuzzed nodes in up to 24
+   orders each, judged against full factorisation: 0 false kills; the old count,
+   emulated with the same generators, gives 699 false kills in 4 636 checks of a
+   separate run of the first and 3 269 on the same 7 500 nodes of the second).
+   According to the reviewer's
+   audit of the Block 6 trees, that kill line never fired for k = 7, 8, and none of
+   the analogous kills in the budget closures (82 at k = 7, 635 at k = 8) shared a
+   prime; the same count, repeated on the code of Blocks 4 and 5 while this report
+   was being checked, gives the same figures (no firing for k ≤ 8). The earlier
+   certificates did not depend on it. Regression test:
+   `test_unknown_count_does_not_depend_on_the_order_of_the_fixed_primes`.
+3. *A float inside a kill path.* The cofactor classification used
+   `sympy.perfect_power`, which filters odd exponents with a floating-point
+   comparison for bases below 2⁴⁰. A false negative would turn a prime power into
+   "composite, ≥ 2 unknown primes" and could kill a node. No failing input was found
+   (worst observed deviation 0.0061 against a threshold of 0.01), but rule 1 forbids
+   it. Replaced by an exact integer root (Newton iteration on integers) with r^e = c
+   verified; tested on prime powers with bases around 2²⁰, 2³³, 2⁴⁰, 2⁶¹.
+4. *Silent stall* — tightening 7. A certifier that does not answer is as useless as
+   one that answers wrongly; two k = 9 runs were lost to it, each stopped after more
+   than 45 minutes without output.
+5. *Refusals instead of loops or asserts.* A case with prod_min·v(hi) > 9/5 is dead
+   instead of yielding a tail equal to its parent; the last-unknown solver declines as
+   a whole beyond a size gate; the index enumeration refuses intervals longer than
+   2·10⁸ instead of walking them. One item of this kind is older: the case
+   de-duplication compares (lo, hi) as well, because children (a) and (b) of a split
+   differ only there; a reviewer noticed on the prototype that (b) would otherwise be
+   lost, before the first commit of the block.
+6. *Wrong written derivation of Cor. 6.* §6.1 and the code header stated
+   v_r(σ(N)) = a_r − v_r(num) + v_r(den); the correct identity is
+   a_r + v_r(num) − v_r(den) (for r = 5: a₁ − 1). The code and the displayed bound were
+   right. §6.1 also claimed that the bound for r = 5 "reproduces the universal one of
+   Block 3": false as stated (the code adds a Wieferich term for the unknowns; the
+   bound is looser for s ≥ 1 and is never used for r = 5). Both corrected in place,
+   marked. Smaller errors corrected in §4.1, §4.3, §4.6, §6.3 and in docstrings.
+
+**Review of the fixes.** Tightening 7, the exact root of defect 3, and one further
+change (in the composite case of the large-prime lemma the divisors of ℓ·e are now
+taken from those of e, as div(e) ∪ ℓ·div(e), without factoring) were made after the
+pass, so they went to two further reviewers on a frozen copy. None of their ten
+claims was refuted.
+
+- *Per-feeder cap.* Pruned and unpruned enumerations give the same case list in
+  29 697 random trials, 35 857 engineered configurations and all 9 536 distinct real
+  calls of the k = 5, …, 8 trees. At the a₁ = 34 node all C(40, 7) = 18 643 560
+  unpruned assignments were run through the unpruned function: same list, same order.
+  At the a₁ = 54 node only the 8 575 992 assignments that respect the caps of the
+  first three feeders were enumerated unpruned; the other 377 630 928 are excluded by
+  those caps and were not run. One defect of completeness was found: the guard
+  compared the product of the (k_max + 1) with its limit and ignored Σ k_q ≤ T, so it
+  could refuse a small node (ℓ = 3, T = 2, 14 feeders: 2 125 764 against 120 real
+  vectors). The guard now counts the vectors exactly; it never fired on a real call.
+- *Exact prime-power test.* The integer root is proved (the Newton step never goes
+  below the floor root, by AM–GM) and checked on 2 260 169 cases; the classification
+  is exhaustive against a sieve for c ≤ 1 500 000 and agrees on about 16 000
+  structured inputs (prime powers on both sides of 10⁵, composite exponents, powers
+  of composites) and 30 000 end-to-end closure checks. One finding, about cost only:
+  on a composite of 20 000 bits the exact test takes about 17 s against 0.05 s for the
+  float-filtered routine (prime exponents only would take about 2.6 s). Kept as it
+  is; recorded as a candidate improvement.
+- *Divisors of ℓ·e.* The identity is proved and checked on 231 077 exhaustive pairs
+  and 5 030 special or large ones; old and new code agree on 581 inputs.
+
+**What the pass did not establish** (recorded so that the label stays honest):
+
+- The implementation of `hi` and of the split was not read by the twenty claim
+  reviews, which ran on the previous commit (see Set-up). It is exercised by the
+  target reviews wherever they meet it, on the first commit of this block, and
+  decision by decision by the replay audit, on the snapshot described in §7.6.
+- No end-to-end run with a *planted friend* goes through the real partition, because
+  the budgets v₅ = a₁ − 1 and v₃ = 2 are specific to the target 9/5. The partition
+  rests on derivations, model-based tests and differentials; the planted evidence
+  covers everything around it (tails, split, Cor. 6, index, complete sets) through a
+  generic stand-in partition.
+- In the Cor. 6 bound, mutants with one wildcard fewer are *not* detected by any
+  planted test (the unknown term always carries slack); the wildcard counts rest on
+  the proof alone.
+- Paths that no real run with k ≤ 8 exercises: the (0, 0) mode of the solver, tails
+  with `maximos`, Cor. 6 with hi set. The first and the third occur at k = 9 (344
+  solver calls and 367 Cor. 6 firings of these kinds, counted by the replay audit of
+  §7.6); the second only in part: 2 936 tail calls of k = 9 carry a non-empty
+  `maximos`, but none of them branches on a prime that has an upper bound. Paths that
+  no real run with k ≤ 9 exercises, so that only unit, planted and differential tests
+  cover them: the large-prime lemma for the other primes of a set (the 201 sets with
+  a large prime at k = 9 die one step earlier, the large prime itself having no
+  admissible exponent), the exact signature test of a complete set (no complete set
+  of k = 9 survives the exponent lists), the total-closure lemma, prime-power
+  cofactors, a common factor in the coprime-base refinement, a tail whose branching
+  prime has an upper bound (exact values stopping at M, no tail), the dead return of
+  `_ramos_expoente`, the kill by hi ≤ lo, a split without case (b), and every
+  equality branch (a product equal to 9/5).
+- `isprime` is documented as definitive only below 2⁶⁴; above that the label assumes
+  strong BPSW (no known counterexample). In the environment used here (sympy 1.14.0
+  without gmpy2) its fixed Miller–Rabin bases are still deterministic below
+  3.317·10²⁴, and BPSW starts there.
+
+### 7.5 Results
+
+`python experiments/elimina_omega_k.py --k-max 9` (k = 6, …, 9), on the code of this
+commit:
+
+```
+omega = 6: nos=55 mortos_min=0 ramo_i=16 particoes=29 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=26 com_primo_grande=0 casos_sem_fecho=3 ultimos_resolvidos=1 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 fecho_total_mortos=0 splits=0 dead_hi=0 folhas=0 amigos=0 tempo=0.5s
+omega = 7: nos=459 mortos_min=0 ramo_i=46 particoes=172 ramos_expoente=0 caudas=0 conjuntos_completos=40 completos_mortos_indice=247 com_primo_grande=0 casos_sem_fecho=28 ultimos_resolvidos=5 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 fecho_total_mortos=0 splits=0 dead_hi=0 folhas=0 amigos=0 tempo=0.8s
+omega = 8: nos=18390 mortos_min=243 ramo_i=357 particoes=5970 ramos_expoente=311 caudas=311 conjuntos_completos=3642 completos_mortos_indice=8327 com_primo_grande=0 casos_sem_fecho=338 ultimos_resolvidos=487 candidatos_ultimo=37 cor6_ramos=17 cor6_mortos=0 fecho_total_mortos=0 splits=20 dead_hi=208 folhas=0 amigos=0 tempo=1.8s
+omega = 9: nos=2298715 mortos_min=18869 ramo_i=10074 particoes=1338903 ramos_expoente=129289 caudas=129289 conjuntos_completos=213615 completos_mortos_indice=585665 com_primo_grande=201 casos_sem_fecho=4128 ultimos_resolvidos=67329 candidatos_ultimo=1304 cor6_ramos=44403 cor6_mortos=4 fecho_total_mortos=0 splits=22653 dead_hi=141663 folhas=0 amigos=0 tempo=308.9s
+```
+
+k ≤ 8: same verdicts as before; the k = 6, 7 trees keep the node counts of Block 6
+(55 and 459) and the k = 8 tree is much smaller (90 032 nodes and 55 s in Block 6,
+18 390 nodes and 2 s now). k = 9: zero friends, zero refusals. For k = 9 the official
+run above took 309 s on an otherwise idle machine; the instrumented run below, made
+with other runs in parallel, took 546 s.
+
+Cost by a₁ = v₅(N), from one instrumented run on the same code (node counts are
+deterministic; the times are those of that run, 546 s in total with other runs in
+parallel, and only indicative), next to the times of Table 1 of arXiv:2310.15900
+(SageMath, a different machine):
+
+| a₁ | first prime set of the subtree | nodes | time here | time in arXiv:2310.15900 |
+|---|---|---|---|---|
+| 2 | {5, 31} | 993 297 | 226 s | 7 105 s + 3 s |
+| 4 | {5, 11, 71} | 164 256 | 32 s | 23 s |
+| 6 | {5, 19531} | 740 440 | 210 s | 452 s + 61 s |
+| 8 | {5, 19, 31, 829} | 1 558 | 0.1 s | < 1 s |
+| 10 | {5, 12207031} | 198 288 | 38 s | 26 721 s |
+| 12 | {5, 305175781} | 199 762 | 32 s | 27 642 s |
+| 46 | {5, σ(5⁴⁶)} | 4 | 3.5 s | 27 913 s |
+| other 14, …, 56 | | 1 109 | 3.8 s | 3 s (14 ≤ a₁ ≤ 64) |
+
+(Plus the root: 1 + 993 297 + … + 1 109 = 2 298 715.) The comparison is between
+different machines, languages and methods and says nothing precise about speed. What
+it shows is that the profile is different: the three cases that take 7.4 to 7.8 hours
+each there (a₁ = 10, 12, 46, with σ(5^{a₁}) prime) are minor here. For a₁ = 46 the
+reason is elementary: the index leaves only 7 or 11 as the next prime (and, after 11,
+only 13), and the universal bound of Block 3, a₁ ≤ 1 + m(m − 1) with m the number of
+known primes ≡ 1 (mod 5) plus the free slots, gives 43 < 46 at {5, 7, σ(5⁴⁶)}
+(m = 1 + 6) and at {5, 11, 13, σ(5⁴⁶)} (m = 2 + 5). With one more prime (k = 10) the
+same bound gives 57, so that case will open.
+
+Strategy variants of k = 9, on the code of this commit up to comments and docstrings
+(one threshold changed; the trees differ, the verdicts must not). The times are those
+of runs made partly in parallel and are only indicative; the default row is the
+instrumented run of the table above:
+
+| variant | nodes | splits | Cor. 6 branchings / kills | sets with a large prime | friends, refusals | time |
+|---|---|---|---|---|---|---|
+| default | 2 298 715 | 22 653 | 44 403 / 4 | 201 | 0, 0 | 546 s |
+| `LIMIAR_INDICE` = 100 | 1 847 389 | 24 943 | 49 115 / 4 | 168 | 0, 0 | 379 s |
+| `LIMIAR_INDICE` = 1000 | 3 973 534 | 20 554 | 39 855 / 0 | 210 | 0, 0 | 732 s |
+| `FATORA_BITS` = 60 | 2 424 403 | 23 101 | 57 200 / 4 | 201 | 0, 0 | 527 s |
+
+A fourth variant, `R_CHEAP_PROP9` = 0 (tightening 2 switched off, every O(r) bound
+computed at every firing), was run only on the code as it stood before the exact
+count in the `MAX_ASSIGNMENTS` guard (§7.4) and was not repeated; it was stopped
+after 2 h 12 min without finishing. It gives no verdict at k = 9. The same variant is in the test suite on k = 6, 7, but it is
+inert there (the finite exponent bound never fires, so the threshold is never
+consulted); on k = 8 it changes the tree (18 383 nodes against 18 390) with the same
+verdict. The default threshold is not the best one in nodes (`LIMIAR_INDICE` = 100
+needs 20 % fewer).
+
+Tests: 147 green (32 new in this block).
+
+### 7.6 Replay audit of the k = 9 run
+
+The certificate for k = 9 is one run of 2 298 715 nodes that nobody reads. After the
+pass of §7.4 the run itself was audited. Six reviewers, one per family of decisions,
+each replayed `certifica_omega(9)` on a frozen copy of the code with recording spies
+and re-derived every decision of that family with code written from the mathematics
+(exact integers and Fractions; the audited functions were never used to check
+themselves). A seventh looked for what the six had left uncovered. Every reviewer
+reproduced the 19 counters of the official run; two auxiliary replays recorded only
+some of them (the node count; the node count, splits and kills by hi), and those
+agree. **No defect was claimed.**
+
+| Family | Coverage (always 100 % of the run unless stated) | What was re-derived |
+|---|---|---|
+| Node entry, index kills, index fallback, children | 2 298 715 nodes | the entry outcome of every node, twice (integers; Fractions): 141 663 kills by hi = 112 127 (s = 0) + 29 524 (prod_min·v(hi) > 9/5) + 12 (no free prime in (lo, hi]); 18 869 kills by prod_min, all strict; 585 665 complete sets dead by index = 31 624 + 554 041; the 10 074 index fallbacks re-enumerated (303 065 children, identical); the 1 995 649 children of partitions identical to an independent construction. Tightest kill margin about 3·10⁻²⁰ |
+| Split and tails | 22 653 splits, 209 379 tail calls | B recomputed; prod_sup·v(B−1) > 9/5 > prod_sup·v(B+1) at every split; 20 506 splits into (a)+(b), 2 147 into (a)+(a2)+(b), no child lost; every tail list (129 289) and every refusal to branch (80 090) re-derived |
+| Finite exponent bound | 44 407 firings | preconditions (s = 2, lo ≥ B_min), L, and the 189 693 bounds A_r term by term; the 4 kills (two nodes, C = {5,7,11,17,19,2213,19531} and the same with 2221; r = 17 bounded by 8 against a minimum of 12 and 10) confirmed by enumerating all 3 735 and 3 504 admissible pairs of unknowns |
+| Last unknown, injective feasibility | 99 355 solver calls, 709 358 feasibility calls | the whole domain (lo, U_max] of the 46 891 distinct list-returning calls by brute force (19 343 629 primes tested exactly): 315 candidates required, 315 returned; every distinct feasibility call (418 273) against an independent matching and a Hall test |
+| Closures, pins, dead partitions, budgets | 1 338 903 partitions | every partition re-executed and compared with an independent implementation; 1 225 718 pins, each with a modular certificate; the 653 228 dead partitions re-derived; pruned and unpruned budget enumeration equal on 892 131 of the 892 132 distinct calls (the exception is the a₁ = 54 node, compared feeder by feeder) |
+| Complete sets | 213 615 sets | every one dies because some prime has no admissible exponent; the 511 030 exponent lists recomputed; each of the 132 861 distinct sets has an elementary certificate that does not use the branch constraints |
+
+Five of the seven reviewers also planted defects (false kills, a dropped split case,
+a dropped exact branch, a wrong prime test: 37 in all) and checked that their own
+detectors flagged every one: 26 as in-memory mutations of the code on k = 8 (node
+entry 12, split and tails 8, seventh reviewer 6), 5 as in-memory mutations on a
+13 389-partition slice of k = 9 (closures), and 6 in copies of recorded calls of
+k = 9 (complete sets). The reviewer of the last unknown instead dropped one candidate
+from each non-empty recorded list (297 of 297 flagged); the reviewer of the finite
+exponent bound planted no defect.
+
+What the seventh reviewer added, on 100 % of the run unless a sample is stated. The
+detectors for de-duplication, order, caches, aliasing and the two library primality
+calls each flagged a defect planted in memory on k = 8, and the certificate verifier
+rejected corrupted and forged chains; the count of swallowed exceptions, the root
+check and the two plain re-runs have no negative control:
+
+- *Primality.* Every number the run treats as prime was proved prime by independent
+  code: the 33 157 distinct primes that enter some C and the 20 942 values classified
+  as prime, by trial division or 13 Miller–Rabin bases below 3.317·10²⁴, and above
+  that by 2 699 elliptic-curve certificate chains (up to 1 797 bits) checked by an
+  exact integer verifier.
+- *Composition.* The only exceptions swallowed are the 10 074 "open cases" refusals
+  of a node's own partition, all with prod_sup < 9/5; the case de-duplication drops
+  214 810 cases, each identical to one kept; reversing the order of the fixed
+  exponents changes nothing in the 852 974 partitions that have at least two; the
+  memo caches return what an uncached call returns on a sample (840 825 of the
+  92 727 412 calls to seven memoised functions, 0.9 %; the caches of `I_pp` and
+  `sup_pp` were not instrumented) and never evict; no node mutates a dictionary of
+  its parent.
+- *Library primality in two decisions.* The primality of B at the 22 653 splits and
+  the next prime in the 53 352 bounds L were redone by trial division.
+- *Platform and code identity.* A second interpreter and library version
+  (Python 3.12.10, sympy 1.13.2 against 3.13.2 and 1.14.0) gives the same counters.
+  The audited snapshot differs from the code of this commit by the exact count inside
+  the `MAX_ASSIGNMENTS` guard, which this run never reaches, and by comments and
+  docstrings; the code of this commit gives the same counters (§7.5).
+- *Root.* The 28 values of a₁ and their 24 sets of pins equal the full factorisation
+  of σ(5^{a₁}); a₁ = 44 is dead (10 primes for 8 slots); a₁ = 40, 42, 52 are committed
+  without pins.
+
+What the audit shows about the run:
+
+- The equality branches never occur, and neither do the total-closure lemma, a
+  prime-power cofactor, or a common factor in the coprime-base refinement (0 of
+  88 546 refinements). The large-prime lemma and the signature test are never
+  reached (§7.4).
+- 97 197 node visits (4.2 %) repeat a state already visited; a memo of states would
+  remove them.
+- Two firings of the finite exponent bound sit on a node where L is below the least
+  admissible unknown: the code branches where it could kill. Performance only.
+- The pin counter printed by the script counts cases with pins, not pinned primes;
+  it includes 32 647 cases of partitions that are then discarded in favour of the
+  index fallback.
+- With `FATORA_BITS` = 90 the root leaves Φ₄₁(5), Φ₄₃(5) and Φ₅₃(5) unfactored, which
+  is why a₁ = 40, 42, 52 carry no pins.
+
+What it leaves open:
+
+- The composition of the families rests on the derivations. A planted friend cannot
+  be driven through the partition of the target 9/5: any integer that satisfies the
+  hypotheses the partition uses is a friend of 10.
+- Four steps are checked only against a second derivation of the same lemma, not
+  against the definition: the witness-level counting of the budgets, the injective
+  feasibility test, the universal bound for a₁, and the finite exponent bound in its
+  44 403 branchings (all pairs of unknowns were enumerated for the 4 kills and for
+  124 branchings only, every 20th of the 2 490 firings with L < 16 384; on those
+  branchings the bound was evaluated pair by pair on a subsample of the pairs when
+  there were many).
+- Branches with no occurrence at k = 9 carry no weight in this certificate and no
+  evidence from it.
+- Only k = 9 was replayed (k = 8 for the controls); k ≤ 8 has the evidence of §7.4.
+- Every run and every replay was made on one machine. The second interpreter and
+  library version ran on the same hardware; a run on different hardware is missing.
+- Negative controls exist for most detectors of the audit, not for all: the
+  tree-only check of the `hi` mechanism in the split family has none of its own (the
+  kills by hi and the inheritance of hi are also re-derived by replays that have
+  them).
+- The audit code, the certificate verifier included, is itself unreviewed, and none
+  of it is part of the repository. It is cited here as review evidence, not as a
+  result; the label keeps the BPSW assumption.
+
+### 7.7 Labels and what is missing
+
+- **Result J.** Every friend of 10 has **ω(N) ≥ 10**.
+  `[PROVED-CONDITIONAL: Theorems A–D and Lemmas/Fact 0 of Phase 0 + Zsygmondy, LTE and
+  the Nielsen/Voight valuation formula (classical) + correctness of core/omega_k.py,
+  core/cadeias.py and core/omega6.py (adversarial passes §2.5 and §7.4 and replay audit
+  §7.6, with the limits listed there: no end-to-end planted friend through the
+  9/5-specific partition; BPSW primality above 2⁶⁴) and of the primitives ALVO, I_pp,
+  sigma_pp and sup_pp they import from core/motor.py (Block 1 engine, adversarial
+  pass §1.5) + correctness of
+  sympy.n_order/factorint/isprime/nextprime/primerange/integer_nthroot/cyclotomic_poly/divisors/totient
+  in the calls consumed]`. **Not new**: it is Thackeray's theorem (arXiv:2310.15900),
+  reproduced by a different method (partition by valuation budgets, closures through
+  cyclotomic pieces, tails, split at B_min, last unknown by exact roots; the finite
+  exponent bound it also uses comes from Thackeray's own Cor. 6 and Prop. 9,
+  re-derived in §6.1) and a different implementation, in minutes. **Not
+  load-bearing**: Theorems E and E′ and Result G keep citing the published result.
+- Result I (ω(N) ≥ 9) is the k ≤ 8 part of the same run and carries the same label.
+- What a result *beyond* the literature (k = 10, i.e. ω(N) ≥ 11) would need first.
+  **Candidate Block 8**, in this order:
+  1. a target-generic partition (budgets v_r for the primes of the target), so that
+     planted friends can be driven through the whole machine end to end;
+  2. the primality certificates and an exact verifier inside the repository, with
+     tests, so that the label can drop BPSW for the runs;
+  3. the open items of §7.6: enumeration of the admissible pairs at every firing of
+     the finite exponent bound where it is affordable, an independent derivation of
+     the witness-level counting, of the injective feasibility test and of the a₁
+     bound written from arXiv:2310.15900 alone, the replay spies on k ≤ 8, a run on
+     different hardware;
+  4. an adversarial pass of the final code as a whole rather than of a diff;
+  5. only then the k = 10 run, whose cost is unknown. Known in advance: the case
+     a₁ = 46 opens (§7.5), the a₁ = 54 node appears with s = 2, and the branches that
+     never occurred at k = 9 have to be audited as they appear. Cheap gains
+     available: a memo of states, the missed prune of §7.6, a faster exact
+     prime-power test, a better `LIMIAR_INDICE`, the project's own exact root in the
+     last-unknown solver in place of the library call.

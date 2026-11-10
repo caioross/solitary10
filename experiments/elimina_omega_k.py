@@ -1,4 +1,4 @@
-"""Certificacao recursiva: nenhum amigo de 10 tem omega(N) = k (Fase 1, Blocos 3-4).
+"""Certificacao recursiva: nenhum amigo de 10 tem omega(N) = k (Fase 1, Blocos 3-7).
 
 Usa core/omega_k.py (certificador recursivo: particao por orcamentos v5/v3 com a
 cota universal a1 <= 1 + (c5 + s)(c5 + s - 1), fecho dos expoentes comprometidos,
@@ -75,16 +75,20 @@ def main() -> None:
         print()
         print(f"CERTIFICADO (parcial): nenhum amigo de 10 tem omega(N) em {certificados}.")
     if certificados:
-        print("Rotulo: [PROVADO-CONDICIONAL: Teoremas A-D e Lemas/Fato 0 da Fase 0 + "
-              "Zsygmondy, LTE e formula de valuacao de Nielsen/Voight (classicos) + "
-              "correcao de core/omega_k.py (certificador recursivo AINDA SEM passada "
-              "adversarial propria - nao e load-bearing), core/omega6.py e "
-              "core/cadeias.py (passada adversarial em results/PHASE_1.md §2.5) + "
-              "correcao de sympy.n_order/factorint/isprime/nextprime/cyclotomic_poly "
-              "nas chamadas consumidas]")
-        print("Nota: para omega >= 7 o certificado load-bearing e o do Bloco 2 "
-              "(experiments/elimina_omega6.py); acima disso so este recursivo cobre, "
-              "e o rotulo fica pendente da passada adversarial propria.")
+        print("Label: [PROVED-CONDITIONAL: Theorems A-D and Lemmas/Fact 0 of Phase 0 + "
+              "Zsygmondy, LTE and the Nielsen/Voight valuation formula (classical) + "
+              "correctness of core/omega_k.py, core/cadeias.py and core/omega6.py "
+              "(adversarial passes: results/PHASE_1.md sections 2.5 and 7.4, and replay "
+              "audit 7.6, with the limits listed there - no end-to-end planted friend "
+              "through the 9/5-specific partition; BPSW primality above 2^64) and of "
+              "the primitives ALVO, I_pp, sigma_pp and sup_pp they import from "
+              "core/motor.py (Block 1 engine, adversarial pass: section 1.5) + "
+              "correctness of sympy.n_order/factorint/isprime/nextprime/primerange/"
+              "integer_nthroot/cyclotomic_poly/divisors/totient in the calls consumed]")
+        print("Note: not load-bearing. For omega >= 7 the load-bearing certificate is "
+              "the one of Block 2 (experiments/elimina_omega6.py); omega(N) >= 10 is "
+              "the theorem of Thackeray (arXiv:2310.15900), which a full run up to "
+              "k = 9 reproduces by a different method.")
 
 
 if __name__ == "__main__":

@@ -1041,3 +1041,233 @@ def test_block7_index_loop_refuses_huge_spans(monkeypatch):
     monkeypatch.setattr(omega_k, "MAX_INDEX_SPAN", 50)
     with pytest.raises(NaoCertificavel, match="MAX_INDEX_SPAN"):
         omega_k._certifica([5, 7, 11, 13, 31], 2, 31, StatsK(), {5: 2}, {}, {}, None)
+
+
+# ---------------------------------------------------------------------------
+# Block 7, follow-up of the adversarial panel
+# ---------------------------------------------------------------------------
+
+_TREE_COUNTERS = ["nos", "mortos_min", "ramo_i", "particoes", "ramos_expoente", "caudas",
+                  "ultimos_resolvidos", "candidatos_ultimo", "cor6_ramos", "cor6_mortos",
+                  "fecho_total_mortos", "splits", "dead_hi", "conjuntos_completos",
+                  "completos_mortos_indice", "conjuntos_com_primo_grande",
+                  "assinaturas_testadas", "n_pins"]
+
+
+def test_casos_ell_feeder_cap_gives_the_same_case_list(monkeypatch):
+    # The per-feeder cap k_max[q] only skips assignments that _fecha kills at its
+    # first test. Every distinct real call of the k <= 7 trees whose UNPRUNED
+    # enumeration is affordable must return the same list, in the same order.
+    from math import comb
+    orig = omega_k._casos_ell
+    calls = []
+
+    def spy(C, s, lo, ell, T, fixos, sem_fecho=None):
+        calls.append((list(C), s, lo, ell, T, dict(fixos)))
+        return orig(C, s, lo, ell, T, fixos, sem_fecho)
+
+    monkeypatch.setattr(omega_k, "_casos_ell", spy)
+    for k in (5, 6, 7):
+        certifica_omega(k, light=True)
+    monkeypatch.setattr(omega_k, "_casos_ell", orig)
+    seen, compared, capped = set(), 0, 0
+    for C, s, lo, ell, T, fixos in calls:
+        key = (tuple(C), s, lo, ell, T, tuple(sorted(fixos.items())))
+        livres = sum(1 for q in C if q % ell == 1 and q not in fixos)
+        if key in seen or comb(T + livres, livres) > 3000:
+            continue
+        seen.add(key)
+        pruned = orig(C, s, lo, ell, T, fixos)
+        monkeypatch.setattr(omega_k, "_PRUNE_FEEDERS", False)
+        full = orig(C, s, lo, ell, T, fixos)
+        monkeypatch.setattr(omega_k, "_PRUNE_FEEDERS", True)
+        assert pruned == full, (C, s, lo, ell, T, fixos)
+        compared += 1
+        capped += livres >= 1 and T > s + 1
+    assert compared >= 300 and capped >= 30, (compared, capped)
+
+
+def test_feeder_cap_does_not_change_the_tree(monkeypatch):
+    # same tree with and without the cap (only the counter of skipped closures, which
+    # used to be incremented inside doomed assignments, may differ)
+    base = certifica_omega(7, light=True)
+    monkeypatch.setattr(omega_k, "_PRUNE_FEEDERS", False)
+    full = certifica_omega(7, light=True)
+    for f in _TREE_COUNTERS:
+        assert getattr(base, f) == getattr(full, f), f
+    assert base.amigos == full.amigos == []
+
+
+def test_casos_ell_large_budget_node_is_instant():
+    # Found by the adversarial panel (and by the k = 9 run stalling): the child a1 = 54
+    # of the k = 9 root has T = 53 and 7 free feeders, i.e. C(60, 7) = 386 206 920
+    # unpruned assignments (hours). With the per-feeder cap it is immediate.
+    C = [5, 11, 71, 103511, 511831, 12207031, 65628751, 190295821]
+    n = (5**55 - 1) // 4                     # sigma(5^54): exactly the primes of C \ {5}
+    for q in C[1:]:
+        assert n % q == 0
+        while n % q == 0:
+            n //= q
+    assert n == 1
+    assert set(omega_k._casos_ell(C, 1, 5, 5, 53, {5: 54})) == {("pin", (3221,)), ("aberto", 53)}
+    st = StatsK()
+    omega_k._certifica(C, 1, 5, st, {5: 54}, {}, {})
+    assert st.amigos == [] and st.nos <= 4
+    # the a1 = 34 child (18 643 560 unpruned assignments, 581 s before the cap)
+    C = [5, 11, 71, 211, 631, 4201, 19531, 85280581]
+    st = StatsK()
+    omega_k._certifica(C, 1, 5, st, {5: 34}, {}, {})
+    assert st.amigos == [] and st.nos <= 10
+
+
+def test_casos_ell_refuses_too_many_assignments(monkeypatch):
+    # no silent stall: beyond MAX_ASSIGNMENTS the node is refused, never enumerated
+    args = ([5, 11, 31, 41, 61], 3, 61, 5, 9, {5: 10})
+    assert omega_k._casos_ell(*args) is not None
+    monkeypatch.setattr(omega_k, "MAX_ASSIGNMENTS", 3)
+    with pytest.raises(NaoCertificavel, match="MAX_ASSIGNMENTS"):
+        omega_k._casos_ell(*args)
+
+
+def test_iroot_is_the_exact_floor_root():
+    import random
+    from core.omega_k import _iroot
+    for e in range(1, 8):
+        for n in range(0, 3000):
+            r = _iroot(n, e)
+            assert r**e <= n < (r + 1) ** e, (n, e)
+    rng = random.Random(7)
+    for _ in range(400):
+        e = rng.randint(2, 40)
+        r = rng.getrandbits(rng.randint(2, 300)) + 2
+        for n in (r**e - 1, r**e, r**e + 1):
+            x = _iroot(n, e)
+            assert x**e <= n < (x + 1) ** e, (n, e)
+
+
+def test_prime_power_cofactors_are_classified_exactly():
+    # Panel finding: sympy.perfect_power decides odd exponents with a float filter for
+    # bases below 2^40; a false negative would turn a prime power r^e into "composite"
+    # (>= 2 unknown primes) and could kill a node falsely. The test is now exact.
+    from sympy import nextprime, prevprime
+    from core.omega_k import _classifica_cofator, _novos_e_resto, _phi_valor, _prime_power_base
+    assert _prime_power_base(3**5) == 3 and _prime_power_base(2**10) == 2
+    assert _prime_power_base(36) is None and _prime_power_base(7) is None
+    bases = [100003, int(prevprime(2**20)), int(nextprime(2**33)), int(prevprime(2**40)),
+             int(nextprime(2**40)), int(prevprime(2**61))]
+    for p in bases:
+        for e in (2, 3, 5, 7, 11, 13, 16):
+            assert _classifica_cofator(p**e) == ("potencia", p), (p, e)
+            assert _classifica_cofator(p**e + 2 * p)[0] != "potencia"
+        q = int(nextprime(p))
+        assert _classifica_cofator(p * q) == ("composto", 0)
+        assert _classifica_cofator(p**2 * q) == ("composto", 0)
+        assert _classifica_cofator(p**3 * q**3) == ("composto", 0)
+        assert _classifica_cofator(p) == ("primo", p)
+    # a genuine prime-square cofactor: Phi_3(2288805793) = 3 · 1321442641^2 is ONE new
+    # prime, alive with a single slot
+    val = _phi_valor(3, 2288805793)
+    assert val == 3 * 1321442641**2 and isprime(1321442641)
+    assert _novos_e_resto(val, {3, 5, 2288805793}, 1) == ((1321442641,), 1)
+
+
+def test_unknown_count_does_not_depend_on_the_order_of_the_fixed_primes():
+    # False kill latent since Block 4 (found on the Block 6 code): a pin identified from a
+    # LATER fixed prime that divides the unfactored residue of an EARLIER one was counted
+    # twice (1 pin + 2 for the residue > s = 2). sigma(20849069^4) = 262321 · Q (98 bits,
+    # beyond the factoring budget) and sigma(97^4) = 11 · 31 · 262321:
+    # the closure needs exactly the two new primes {262321, Q}. Both insertion orders
+    # must give that pin (the coprime-base refinement strips the pin from the residue).
+    Q = 720300353869246791671341
+    assert isprime(Q) and sigma_pp(97, 4) == 11 * 31 * 262321
+    assert sigma_pp(20849069, 4) % (262321 * Q) == 0
+    C = [5, 7, 11, 13, 31, 97, 60013, 20849069]
+    for fixos in ({5: 2, 20849069: 4, 97: 4}, {5: 2, 97: 4, 20849069: 4}):
+        casos = omega_k._particao(C, 2, 60013, StatsK(), fixos, {})
+        assert [c.pins for c in casos] == [(262321, Q)], fixos
+
+
+def test_big_prime_lemma_composite_case_against_brute_force():
+    # Case (B1) with ord_r(p) = m composite and m not an order modulo any small prime
+    # of S: m is found from the divisors of e (m = ell·e) without factoring ell·e.
+    # Truth by brute force: sigma(p^a) supported on S + {3}.
+    from core.omega_k import _expoentes_com_primo_grande
+    casos = [(11, 9, 1772893, [5, 7, 11, 19]), (13, 9, 1609669, [5, 13, 61]),
+             (11, 15, 195019441, [5, 7, 11, 19, 3221]), (17, 15, 6566760001, [5, 17, 307, 88741])]
+    for p, m, r, S_peq in casos:
+        assert int(n_order(p, r)) == m
+        assert all(int(n_order(p, q)) != m for q in S_peq if q != p)
+        S = set(S_peq) | {r, 3}
+        validos = []
+        for a in range(2, 61, 2):
+            n = sigma_pp(p, a)
+            for q in S:
+                while n % q == 0:
+                    n //= q
+            if n == 1:
+                validos.append(a)
+        assert m - 1 in validos
+        exps = _expoentes_com_primo_grande(p, frozenset(S_peq), r, frozenset({3}), 1)
+        assert [a for a in exps if a <= 60] == validos, (p, m)
+
+
+def test_casos_ell_guard_counts_the_assignments_exactly(monkeypatch):
+    # The guard must not refuse because of the crude product of (k_max + 1): with a
+    # small budget T the vectors with sum <= T are few. ell = 3, T = 2, six feeders:
+    # the product is up to 3^6 = 729, the enumeration at most C(8, 2) = 28 vectors.
+    from itertools import product
+    C = [5, 7, 13, 19, 31, 37, 43]
+    args = (C, 1, 43, 3, 2, {5: 2})
+    feeders = [q for q in C if q % 3 == 1]
+    assert len(feeders) == 6
+
+    def cap(q):      # the per-feeder cap, recomputed from its definition (s = 1, T = 2)
+        k, missing = 0, 0
+        while k < 2:
+            if not any(omega_k._ordem_e_potencia(q, r, 3, k + 1) for r in C if r != q):
+                if missing == 1:
+                    break
+                missing += 1
+            k += 1
+        return k
+
+    caps = [cap(q) for q in feeders]
+    exact = sum(1 for v in product(*[range(c + 1) for c in caps]) if sum(v) <= 2)
+    crude = 1
+    for c in caps:
+        crude *= c + 1
+    assert exact < crude
+    reference = omega_k._casos_ell(*args)
+    monkeypatch.setattr(omega_k, "MAX_ASSIGNMENTS", exact)          # crude > limit, exact fits
+    assert omega_k._casos_ell(*args) == reference
+    monkeypatch.setattr(omega_k, "MAX_ASSIGNMENTS", exact - 1)
+    with pytest.raises(NaoCertificavel, match=f"{exact} budget assignments"):
+        omega_k._casos_ell(*args)
+
+
+def test_teichmuller_minima_match_the_direct_definition():
+    # m_a(r) = min_{y = 2..r-1} (y^(r^(a-1)) mod r^a). The certifier computes these
+    # minima incrementally (one exponentiation by r per residue and level) and extends
+    # a cached list in place; compare with the definition, in several call orders.
+    from sympy import primerange
+
+    def direct(r, a):
+        return min(pow(y, r ** (a - 1), r ** a) for y in range(2, r))
+
+    for order in ((2, 3, 4, 5), (5, 2, 4, 3), (4, 5, 3, 2)):
+        omega_k._TEICH_MIN.clear()
+        for r in primerange(5, 60):
+            for a in order:
+                assert omega_k._min_residuo_teichmuller(r, a) == direct(r, a), (r, a, order)
+    omega_k._TEICH_MIN.clear()
+    for r in (331, 1009):
+        for a in (3, 2):
+            assert omega_k._min_residuo_teichmuller(r, a) == direct(r, a), (r, a)
+    # the extension driven by a bound L (the one the certifier uses) gives the same list
+    omega_k._TEICH_MIN.clear()
+    for r in (7, 11, 31, 97):
+        mins = list(omega_k._teich_minima(r, L=10**6))
+        assert mins[-1] > 10**6 and all(m <= 10**6 for m in mins[:-1])
+        assert mins == [direct(r, a) for a in range(2, len(mins) + 2)]
+        assert omega_k._nivel_wieferich_max(r, 10**6) == len(mins)
+    omega_k._TEICH_MIN.clear()

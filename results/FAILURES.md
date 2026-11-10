@@ -14,6 +14,55 @@ Entry format:
 
 ---
 
+## [2026-11-10] Phase 1, Block 7 — defects of the recursive certifier found on the way to ω = 9 (all closed)
+
+- **What was tried:** closing k = 9 with the split at B_min (PHASE_1.md §7), and then
+  attacking the whole recursive certifier adversarially before trusting the answer.
+- **Why it failed (precise reason, one per defect):**
+  1. *Silent stall.* The partition by the v₅ budget enumerated C(T + c, c) vectors
+     before testing any: 3.9·10⁸ at the child a₁ = 54 of the k = 9 root. Two runs were
+     lost, each stopped after more than 45 minutes without output. Not unsound, but a
+     certifier that does not answer certifies nothing.
+  2. *A lemma whose premise was not what the code had checked.* The total-closure
+     lemma needs "no σ(q^{a_q}) has a prime outside C ∪ {3}"; a cyclotomic piece skipped
+     by a size gate counted as "no new prime". Latent since Block 6, never fired.
+  3. *A count that depended on the order of processing.* Since Block 4 a pin found
+     from a later fixed prime and dividing the unfactored residue of an earlier one
+     was counted twice, so a node could die in one insertion order of the fixed
+     exponents and live in the other. By audit of the Block 6 trees (k = 7, 8), and
+     by the same count repeated on the code of Blocks 4 and 5, it never decided a
+     node for k ≤ 8.
+  4. *A float inside a kill path*, hidden in a library call (`sympy.perfect_power`
+     filters odd exponents with a floating-point comparison below 2⁴⁰).
+  5. *A written derivation that was not the one implemented.* The Cor. 6 header and
+     PHASE_1.md §6.1 had the sign of v_r(num) − v_r(den) reversed and claimed an
+     agreement with the universal bound of Block 3 that no test checked and that is
+     false; the code was right.
+  6. *Loops and asserts where a refusal was due.* A tail equal to its own parent, an
+     index interval longer than 2·10⁸ walked instead of refused, a solver past its
+     size gate. In the same family, caught on the prototype: two split children that
+     the case de-duplication would have merged because they differ only in (lo, hi).
+- **What to keep:**
+  - Every enumeration needs either a proof that it is small or a guard that refuses
+    (`MAX_ASSIGNMENTS`, `MAX_INDEX_SPAN`, `SOLVER_BITS`). A stack watchdog on a thread
+    finds the stalled frame in minutes; elapsed time must be read from the process
+    clock, not guessed.
+  - The premise of a kill has to be computed from what was actually examined
+    ("every piece examined and none had a new prime"), never from the absence of a
+    finding.
+  - Any count of unknowns must be invariant under the order in which the information
+    arrives: test it by permuting the order against full factorisation.
+  - Library calls in kill paths have to be read for floats, not assumed exact.
+  - A reviewer attacking the written proof finds errors that tests of the code cannot:
+    the derivation and the code must be checked against each other, both ways.
+  - A guard is part of the certifier too: the first version of `MAX_ASSIGNMENTS`
+    compared a crude product with its limit and would have refused nodes with 120
+    real cases. Count exactly what is guarded.
+  - A long run should be audited as a run: replaying it with spies and re-deriving
+    every decision family by family (PHASE_1.md §7.6) showed which paths carry the
+    certificate and which never execute, which no unit test can show.
+  - Outcome: with these closed, k = 9 certifies in about 6 minutes (PHASE_1.md §7.5).
+
 ## [2026-09-12] Phase 1, Block 6 — Wieferich bound on the unknowns with an unsafe bound L
 
 - **What was tried:** Thackeray's Cor. 6 + Prop. 9 to bound the exponent of the
@@ -36,7 +85,7 @@ Entry format:
   "smallest unknown ≤ B′" (a virtual factor I(B′²) in prod_min makes the tails die
   without enumeration) and "all > B′" (where Cor. 6 holds).
 - **Outcome (2026-11-10, Block 7):** the split was implemented and works: the node
-  {5,7,11,13,31,97,52361} closes in 57 nodes and 0.2 s, and the finite exponent bound
+  {5,7,11,13,31,97,52361} closes in 54 nodes and 0.1 s, and the finite exponent bound
   finally fires where it is valid (case (b), s = 2). Two further defects of this
   block's code surfaced on the way: the bound L = 1 + 2·b·L₁ was valid but
   astronomically loose once exponents are fixed or bounded (replaced by the exact
@@ -65,6 +114,10 @@ Entry format:
   [1/(r−1), s/(r−1)] — an inherent width of a factor s (PHASE_1.md §5.4, addendum).
   What is missing is the FINITE exponent bound for known primes (Thackeray's Cor. 6 +
   Prop. 9), which turns tails into exact branches with pins — candidate Block 6.
+- **Outcome (2026-11-10, Block 7):** no longer a dead end. The finite exponent bound
+  alone did not fire (Block 6); what closed the node was splitting on the position of
+  the smallest unknown relative to B_min, with a virtual factor that lets the tails
+  work without enumerating it (PHASE_1.md §7.1–7.2). k = 9 is certified.
 
 ## [2026-09-08] Phase 1, Block 3 — ω = 7 by the budget partition (honest wall)
 

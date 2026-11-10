@@ -7,9 +7,10 @@ proof, an independent numerical check and an adversarial review that failed to b
 and every search engine here is built so that it would rather refuse to certify than
 certify something false.
 
-**Where things stand (September 2026).** Every known necessary condition on a friend
-of 10, up to and including $\omega(N) \ge 9$, is now re-derived mechanically by exact
-arithmetic in about two minutes of CPU. The least friend of 10, if it exists, exceeds
+**Where things stand (November 2026).** Every published lower bound on $\omega(N)$
+for a friend of 10, up to and including $\omega(N) \ge 10$ — the best bound in the
+literature — is now re-derived mechanically by exact arithmetic in under ten minutes
+on one core. The least friend of 10, if it exists, exceeds
 $10^{32}$ — a certified bound, two orders of magnitude beyond the uncertified one in
 the literature. Along the way, six defects in four recent papers were found, proved,
 and written up as a corrigenda note.
@@ -50,11 +51,17 @@ authoritative list, with full hypotheses, is
 | **F** | $\omega(N) \ge 6$ | `PROVED-CONDITIONAL` (A–D + Zsygmondy) | Ward 2008, re-derived by the index engine in under 0.1 s; the "31 trick" of Ward's proof emerges from the cyclotomic closure by itself |
 | **G** | the least friend of 10, if any, exceeds $\mathbf{10^{32}}$ | `PROVED-CONDITIONAL` (A–D + $\omega(N) \ge 10$) | certifies, and improves 100×, the uncertified $> 10^{30}$ of OEIS A074902; 34.5 million exact equality tests, sharded under a machine-checked partition |
 | **H** | $\omega(N) \ge 7$ | `PROVED-CONDITIONAL` (A–D + Zsygmondy + LTE), adversarially reviewed | Thm 1.2 of arXiv:2404.00624, whose proof is a hand analysis of 19 divisibility chains; here 0.1 s, and the certifier rediscovers the pin $3221 \mid \Phi_5(11)$ — the entry $f^{11}_{3221} = 5$ of the paper's hand-built Table 4 — unaided |
-| **I** | $\omega(N) \ge 9$ | `PROVED-CONDITIONAL`, **adversarial review pending** | not new — Thackeray (arXiv:2310.15900) has $\omega(N) \ge 10$; the value is an independent, mechanical and short (≈ 75 s) reproduction of most of the state of the art, with a method built for $k \ge 9$ |
+| **I** | $\omega(N) \ge 9$ | `PROVED-CONDITIONAL`, adversarially reviewed (limits stated) | not new — Thackeray (arXiv:2310.15900) has $\omega(N) \ge 10$; an independent and mechanical reproduction in a few seconds, with a method built for $k \ge 9$ |
+| **J** | $\omega(N) \ge 10$ | `PROVED-CONDITIONAL`, adversarially reviewed (limits stated) | not new — this *is* Thackeray's theorem (about 25 CPU-hours there); reproduced by a different method in about 6 minutes: 2 298 715 nodes for $\omega = 9$, zero friends, zero refusals |
 
-Result I is deliberately marked as not yet load-bearing: the recursive certifier that
-produces it has not had its own adversarial pass, and its label says so. The targets
-for that review are listed in [`results/PHASE_1.md`](results/PHASE_1.md) §4.8 and §6.4.
+Results I and J come from the recursive certifier, which has now had its own adversarial
+pass ([`results/PHASE_1.md`](results/PHASE_1.md) §7.4): no false kill and no false
+certificate were found in the committed code, and six defects were found and closed —
+two of them latent soundness holes that no completed run had triggered. The $\omega = 9$ run was
+then replayed and every decision in it re-derived independently, family by family
+(§7.6); no defect was claimed. Both results stay marked as not load-bearing: the review
+could not drive a planted friend end to end through the partition, which is specific to
+the target 9/5, and the label says so.
 
 Nothing above is claimed as a new theorem about 10. What is new is the *machinery*: a
 single exact-arithmetic certifier that reproduces years of hand case analysis in seconds,
@@ -64,7 +71,7 @@ refuses honestly where the theory runs out, and documents exactly where that is.
 
 Exact recomputation against the verbatim arXiv text turned up six defects, all proved
 and certified by [`experiments/verifica_erratas.py`](experiments/verifica_erratas.py)
-and 28 tests. None of them topples a main theorem; one has already propagated into a
+and 29 tests. None of them topples a main theorem; one has already propagated into a
 later paper.
 
 | | Paper | Defect | Label |
@@ -107,10 +114,13 @@ and everything else follows from reading it one prime at a time.
   pinned to explicit divisors of $\Phi_d(p)$; when the index alone cannot bound the last
   unknown, a Nielsen-style tail branches on lower bounds for exponents under a strictly
   decreasing termination measure.
-- **Honesty by construction.** Any closure that would exceed a size budget (factoring a
-  90-bit cofactor, a cyclotomic polynomial of too high degree) raises
-  `NaoCertificavel` instead of pruning. A run either certifies a complete case partition
-  or reports which case it could not close — never a silent truncation.
+- **Honesty by construction.** A closure that would exceed a size budget (a cofactor
+  above 90 bits to factor, a cyclotomic polynomial of too high degree) is never treated
+  as closed: an unfactored composite cofactor counts as at least two unidentified
+  primes, a skipped cyclotomic piece as no information, and a node left with no sound
+  way forward raises `NaoCertificavel` instead of being pruned. A run either certifies
+  a complete case partition or reports which case it could not close — never a silent
+  truncation.
 
 Soundness is tested with **planted targets**: a fabricated solution is injected into the
 search space and the certifier is required to find it exactly once. Two boundary-case
@@ -119,13 +129,19 @@ could certify anything.
 
 ### Where the frontier is
 
-$\omega = 9$ does not terminate yet, and the obstruction is diagnosed rather than
-guessed. At "almost tight" nodes such as $C = \{5, 7, 11, 13, 31, 97, 52361\}$ the
-product of suprema falls short of $9/5$ by $1.8 \cdot 10^{-8}$, so the index bounds the
-smallest unknown prime only by about $10^8$ and the search degenerates into enumeration
-— the same regime in which Thackeray's SageMath run spent 25 CPU-hours.
+$\omega = 9$ now terminates, so the certifier stands where the literature stands:
+$\omega(N) \ge 10$. The next case, $\omega = 10$, would be beyond it and has not been
+attempted; before any such claim the partition has to be made target-generic, so that
+planted friends can be driven through the whole machine, and the final code reviewed
+as a whole ([`results/PHASE_1.md`](results/PHASE_1.md) §7.7).
 
-Two blocks have been spent on it so far:
+The obstruction at $\omega = 9$ was diagnosed rather than guessed. At "almost tight"
+nodes such as $C = \{5, 7, 11, 13, 31, 97, 52361\}$ the product of suprema falls short
+of $9/5$ by $1.8 \cdot 10^{-8}$, so the index bounds the smallest unknown prime only by
+about $10^8$ and the search degenerates into enumeration — the same regime in which
+Thackeray's SageMath run spent 25 CPU-hours.
+
+Three blocks were spent on it:
 
 - **Cyclotomic equations for the last unknown.** With one unknown $U$ left, some prime
   $\ell \mid a_U + 1$ has a witness among the known primes, and
@@ -138,11 +154,19 @@ Two blocks have been spent on it so far:
   known prime, with Wieferich levels computed through the subgroup of order $r-1$ of
   $(\mathbb{Z}/r^a)^\times$) re-derived and implemented with tests against brute force.
   An unsafe bound on the unknowns was caught by a test that compares it with the real
-  index loop; in its sound form the bound never fires for $\omega \le 8$ — an honest
-  negative result, recorded in [`results/FAILURES.md`](results/FAILURES.md).
-
-The diagnosis of *why* the index degenerates, and the node split that should break it,
-are written up in [`results/PHASE_1.md`](results/PHASE_1.md) §6.3 as the next block.
+  index loop; in its sound form the bound, on its own, never fired for $\omega \le 8$ —
+  an honest negative result, recorded in [`results/FAILURES.md`](results/FAILURES.md).
+  With the split of the next item it does fire: 17 branchings at $\omega = 8$, 44 403
+  at $\omega = 9$.
+- **Splitting at $B_{\min}$.** With $R = (9/5)/\prod\sup$ and
+  $B = \lfloor 1 + 1/(R-1) \rfloor$, a node is split on the smallest unknown $U_1$:
+  if $U_1 \le B - 1$, the factor $1 + 1/h + 1/h^2$ with $h = B - 1$ is a known lower
+  bound for its contribution, and the exponent tails then kill the node *without
+  enumerating* $U_1$; if $U_1 = B$, that one prime is pinned like any known prime; if
+  $U_1 > B$ and two unknowns are left, every unknown has an index bound, which is
+  exactly where the finite exponent bound is valid (with three or more unknowns, $U_1$
+  is enumerated over the reduced interval above $B$). The node above went from hours
+  to 54 nodes and 0.1 s, and $\omega = 9$ closes in about 6 minutes.
 
 ## Reproducing
 
@@ -150,7 +174,7 @@ are written up in [`results/PHASE_1.md`](results/PHASE_1.md) §6.3 as the next b
 python -m venv venv
 venv/Scripts/activate            # Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
-pytest -q                        # 115 tests, about 25 s
+pytest -q                        # 147 tests, about 25 s
 ```
 
 | Command | Certifies | Time |
@@ -162,7 +186,7 @@ pytest -q                        # 115 tests, about 25 s
 | `python experiments/cota_certificada.py --log10-bound 30` | no friend up to $10^{30}$ | ≈ 10 s (≈ 100 s for $10^{31}$) |
 | `python experiments/shards_10e32.py` | G: the $10^{32}$ sweep as a verified partition of shards | tens of minutes |
 | `python experiments/elimina_omega6.py` | H: $\omega \ge 7$ by divisibility chains | 0.1 s |
-| `python experiments/elimina_omega_k.py --k-max 8` | I: $\omega \ge 9$ by the recursive certifier | ≈ 1 min |
+| `python experiments/elimina_omega_k.py --k-max 9` | I, J: $\omega \ge 10$ by the recursive certifier | ≈ 6 min (`--k-max 8`: seconds) |
 | `python experiments/verifica_erratas.py` | the six corrigenda | seconds |
 
 Every command prints its result together with the full conditional label it is entitled
@@ -178,7 +202,7 @@ core/          exact-arithmetic primitives and the three certifiers
                  abundancy.py   σ, I, friend test           motor.py    index-pruned tree search
                  cadeias.py     valuations by orders        omega6.py   ω = 6 by chains and pinning
                  omega_k.py     recursive certifier for any ω
-tests/         115 tests: independent re-implementations, planted targets, frozen counts
+tests/         147 tests: independent re-implementations, planted targets, frozen counts
 experiments/   reproducible command-line scripts (each takes --help)
 results/       RESULTS.md (labelled statements) · PHASE_0.md, PHASE_1.md (phase reports)
                ERRATA.md (corrigenda catalogue) · FAILURES.md (abandoned attacks, with reasons)
@@ -188,8 +212,9 @@ docs/          research protocol and labelling rules
 ```
 
 The code base still carries its original Portuguese identifiers and prints labels in
-their original form (`[PROVADO-CONDICIONAL: …]` = `PROVED-CONDITIONAL`); renaming it is
-a separate, test-guarded refactor.
+their original form (`[PROVADO-CONDICIONAL: …]` = `PROVED-CONDITIONAL`), except
+`experiments/elimina_omega_k.py`, whose label and closing note are already printed in
+English; renaming them is a separate, test-guarded refactor.
 
 ## Method
 
