@@ -89,7 +89,9 @@ def test_superficie_do_certificado_omega6_por_divisao_por_tentativa():
 
 def test_identidade_ciclotomica_e_telescopica():
     for p in (5, 7, 11, 13, 23):
-        # prod_{d | m} Phi_d(p) == p^m - 1 (valida cyclotomic_poly indiretamente)
+        # prod_{d | m} Phi_d(p) == p^m - 1 (validates the reference _phi_d_p itself; the
+        # test above compares the distinct primes of sympy's cyclotomic_poly(d, 5), taken
+        # through core.motor._fatores_phi, with those of this reference, odd d <= 21)
         for m in (3, 9, 15, 21):
             prod = p - 1  # Phi_1(p)
             for d in range(2, m + 1):

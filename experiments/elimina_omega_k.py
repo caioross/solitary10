@@ -1,11 +1,16 @@
-"""Certificacao recursiva: nenhum amigo de 10 tem omega(N) = k (Fase 1, Blocos 3-7).
+"""Certificacao recursiva: nenhum amigo de 10 tem omega(N) = k (Fase 1, Blocos 3-8).
 
 Usa core/omega_k.py (certificador recursivo: particao por orcamentos v5/v3 com a
 cota universal a1 <= 1 + (c5 + s)(c5 + s - 1), fecho dos expoentes comprometidos,
 ramificacao por expoente com cauda, conjuntos completos com um primo grande sem
 fatorar r - 1, indice como fallback). Ver results/PHASE_1.md, Blocos 3 e 4.
+Since Block 8 the budgets and the range of a1 are generic in the target; the forms above
+are their 9/5 case, the only target this script runs.
 
 Se alguma cobertura nao fechar (NaoCertificavel), NADA e certificado para esse k.
+Exit status: 0 iff every requested k was certified; 1 if a friend was found; 2 if the
+run stopped at a k that could not be certified (NaoCertificavel), as in
+experiments/elimina_omega6.py.
 
 Uso:  python experiments/elimina_omega_k.py --k 7
       python experiments/elimina_omega_k.py --k-max 7     (varre k = 1..7)
@@ -50,7 +55,7 @@ def roda(k: int, args_pins: bool = False) -> bool:
     return True
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--k", type=int, default=None, help="certifica so este omega")
     parser.add_argument("--k-max", type=int, default=None, help="varre omega = 1..k-max")
@@ -77,19 +82,32 @@ def main() -> None:
     if certificados:
         print("Label: [PROVED-CONDITIONAL: Theorems A-D and Lemmas/Fact 0 of Phase 0 + "
               "Zsygmondy, LTE and the Nielsen/Voight valuation formula (classical) + "
-              "correctness of core/omega_k.py, core/cadeias.py and core/omega6.py "
-              "(adversarial passes: results/PHASE_1.md sections 2.5 and 7.4, and replay "
-              "audit 7.6, with the limits listed there - no end-to-end planted friend "
-              "through the 9/5-specific partition; BPSW primality above 2^64) and of "
-              "the primitives ALVO, I_pp, sigma_pp and sup_pp they import from "
-              "core/motor.py (Block 1 engine, adversarial pass: section 1.5) + "
-              "correctness of sympy.n_order/factorint/isprime/nextprime/primerange/"
-              "integer_nthroot/cyclotomic_poly/divisors/totient in the calls consumed]")
+              "correctness of core/omega_k.py, core/cadeias.py, core/omega6.py, "
+              "core/primality.py and of the primitives ALVO, I_pp, sigma_pp and sup_pp of "
+              "core/motor.py (adversarial passes: results/PHASE_1.md sections 1.5, 2.5, "
+              "7.4, 8.4 and 8.9; replay audit 7.6 with its open items closed in 8.6 "
+              "except a run on other hardware; "
+              "planted friends driven end to end, 8.2, with the limit stated in 8.3: the "
+              "finite exponent bound is tested statement by statement, not end to end) "
+              "+ the primality claims of the run above 2^64, proved when "
+              "experiments/certify_primes.py --k-max K exits 0 for the same K (this "
+              "script does not check them; without that run they rest on sympy's BPSW), "
+              "and sympy.isprime below 2^64 and its answers 'composite' above 2^64 at "
+              "the sites listed in 8.5 + correctness "
+              "of sympy.factorint/nextprime/primerange/integer_nthroot/cyclotomic_poly/"
+              "divisors/totient in the calls consumed]")
         print("Note: not load-bearing. For omega >= 7 the load-bearing certificate is "
               "the one of Block 2 (experiments/elimina_omega6.py); omega(N) >= 10 is "
               "the theorem of Thackeray (arXiv:2310.15900), which a full run up to "
               "k = 9 reproduces by a different method.")
+    if len(certificados) < len(ks):
+        print()
+        print(f"NAO CERTIFICADO: requested k = {ks[0]}..{ks[-1]}; the run stopped at "
+              f"k = {ks[len(certificados)]} (NaoCertificavel); certified: "
+              f"{certificados or 'none'}.")
+        return 2
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

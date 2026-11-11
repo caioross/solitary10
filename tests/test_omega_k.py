@@ -103,7 +103,9 @@ def test_cota_universal_de_a1_no_prefixo_critico_com_dois_slots():
     assert pins == [(31,), (71,), (19531,)]
 
 
-def test_pinagem_so_para_o_alvo_real(monkeypatch):
+def test_pinning_refuses_an_inadmissible_target(monkeypatch):
+    # Block 8: the partition is generic; 2 is refused because no odd square N with
+    # 3 ∤ N has an even numerator in I(N) (core.omega_k._alvo_de).
     monkeypatch.setattr(omega6, "ALVO", Fraction(2))
     with pytest.raises(NaoCertificavel):
         _pinagem([5, 7, 11, 13, 23], 1, 23, StatsK())
@@ -163,6 +165,73 @@ def test_fecho_de_sigma_por_pecas_ciclotomicas_equivale_ao_fecho_direto():
                     assert pecas == (direto, 0), (p, a, s)
 
 
+def test_phi_valor_de_ordem_composta_contra_o_produto_de_moebius():
+    # Phi_d(q) for an order d with two or more distinct primes is the only value _phi_valor
+    # takes from sympy (cyclotomic_poly with an integer in place of the generator).
+    # Independent reference in integers: Phi_d(q) = prod_{e | d} (q^e - 1)^mu(d/e). Every
+    # odd d (the exponents of N are even, so d | a + 1 is odd) with phi(d) <= GRAU_PHI_MAX,
+    # and both gates: None exactly when phi(d) > GRAU_PHI_MAX or the value has more than
+    # PIN_BITS bits.
+    from math import isqrt
+    from core.omega_k import GRAU_PHI_MAX, PIN_BITS, _phi_valor
+    N = GRAU_PHI_MAX**2  # phi(d) >= sqrt(d) for d > 6: nothing above
+    menor = list(range(N + 1))  # least prime factor, by our own sieve
+    for p in range(2, isqrt(N) + 1):
+        if menor[p] == p:
+            for m in range(p * p, N + 1, p):
+                if menor[m] == m:
+                    menor[m] = p
+
+    def fatores(n):
+        f = {}
+        while n > 1:
+            p = menor[n]
+            f[p] = f.get(p, 0) + 1
+            n //= p
+        return f
+
+    def totiente(n):
+        for p in fatores(n):
+            n = n // p * (p - 1)
+        return n
+
+    def mu(n):
+        f = fatores(n)
+        return 0 if any(e > 1 for e in f.values()) else (-1) ** len(f)
+
+    def referencia(d, q):
+        num = den = 1
+        for e in range(1, d + 1):
+            if d % e == 0 and mu(d // e) == 1:
+                num *= q**e - 1
+            elif d % e == 0 and mu(d // e) == -1:
+                den *= q**e - 1
+        assert num % den == 0
+        return num // den
+
+    for m in (15, 45, 105):  # the reference itself: prod_{d | m} = q^m - 1
+        prod = 1
+        for d in range(1, m + 1):
+            if m % d == 0:
+                prod *= referencia(d, 7)
+        assert prod == 7**m - 1
+    compostas = [d for d in range(3, N + 1, 2)
+                 if len(fatores(d)) >= 2 and totiente(d) <= GRAU_PHI_MAX]
+    assert compostas[:6] == [15, 21, 33, 35, 39, 45] and len(compostas) == 76
+    nulos = 0
+    for q in (5, 11, 100003, 2**61 - 1, 10**40 + 121):
+        for d in compostas:
+            ref = referencia(d, q)
+            val = _phi_valor(d, q)
+            if ref.bit_length() > PIN_BITS:
+                assert val is None, (d, q)
+                nulos += 1
+            else:
+                assert type(val) is int and val == ref, (d, q)
+    assert nulos > 0  # the size gate was exercised
+    assert all(_phi_valor(d, 5) is None for d in range(3, 2000, 2) if totiente(d) > GRAU_PHI_MAX)
+
+
 def test_resto_sem_fatorar_conserva_os_pins_e_conta_dois_desconhecidos(monkeypatch):
     # sigma(5^8) = 31·19·829 (Phi_3(5) = 31, Phi_9(5) = 15751 = 19·829): a divisão
     # por tentativa até 10^5 acha os dois primos mesmo com o orçamento de
@@ -182,11 +251,20 @@ def test_resto_sem_fatorar_conserva_os_pins_e_conta_dois_desconhecidos(monkeypat
 
 
 def test_conjunto_com_primo_grande_da_as_mesmas_listas_que_o_fecho_direto(monkeypatch):
-    # Os casos (A)/(B2)/(B1) do cabeçalho são uma segunda derivação, sem ord_r(p),
-    # das listas de expoentes. Forçando "grande" = r - 1 com mais de 20 bits, os
-    # conjuntos completos reais de k = 7 exercitam a via nova, que tem de dar
-    # EXATAMENTE as listas da via direta (ambas exatas e completas).
-    from core.omega_k import _listas_expoentes
+    # The cases (A)/(B2)/(B1) of the header are a second derivation of the exponent
+    # lists, without ord_r(p). With "large" forced to r - 1 above 12 bits, the real
+    # complete sets of k = 7 enter the large-prime branch. In general its lists are a
+    # SUBSET of the direct ones (it also uses v_r(sigma(N)) <= A_r for the large prime r);
+    # every exponent the subset drops must need r^v with v > A_r. On the 13 sets of k = 7
+    # the large prime itself has no admissible exponent (as on the 201 large-prime sets of
+    # k = 9), so _listas_expoentes returns None before any other list is composed: the
+    # first loop checks only the counter and the early return. The second loop compares
+    # the lemma itself with the direct closure, for every prime r of each set whose own
+    # list is non-empty (the lemma never factors r - 1, so it holds for any prime r of
+    # the set). The planted sets after it are the ones where _listas_expoentes composes
+    # the lists.
+    from core.cadeias import v_p, v_q_sigma_direto
+    from core.omega_k import _expoentes_com_primo_grande, _listas_expoentes
     monkeypatch.setattr(omega_k, "ORDEM_BITS", 12)
     conjuntos = certifica_omega(7).conjuntos
     extras = omega6._parametros_do_alvo()[0]
@@ -202,11 +280,75 @@ def test_conjunto_com_primo_grande_da_as_mesmas_listas_que_o_fecho_direto(monkey
         st = StatsK()
         via_nova = _listas_expoentes(C, extras, st, {}, {})
         assert st.conjuntos_com_primo_grande == 1
-        if any(not lista for lista in direto):
-            assert via_nova is None, C
-        else:
-            assert via_nova == direto, C
-    assert exercitados >= 10
+        # the large prime has no admissible exponent: the set dies before any other list
+        # is composed (a data check on these sets, not a lemma)
+        assert direto[C.index(grandes[0])] == [] and via_nova is None, C
+    assert exercitados == 13
+    num, den = omega6.ALVO.numerator, omega6.ALVO.denominator
+    comparados = exigidos = via_r = 0
+    for C in conjuntos:
+        fs = frozenset(C)
+        direto = {p: expoentes_validos_ordens(p, fs, extras) for p in C}
+        for r in C:
+            if not direto[r]:
+                continue
+            A_r = max(direto[r]) + v_p(r, num) - v_p(r, den)
+            for p in C:
+                if p == r:
+                    continue
+                nova = _expoentes_com_primo_grande(p, fs - {r}, r, extras, A_r)
+                devidos = {a for a in direto[p] if v_q_sigma_direto(r, p, a) <= A_r}
+                assert devidos <= set(nova) <= set(direto[p]), (C, p, r, A_r)
+                comparados += 1
+                exigidos += len(devidos)
+                via_r += sum(1 for a in devidos if v_q_sigma_direto(r, p, a) > 0)
+    # 498 comparisons, 99 required exponents, 44 of them with r | sigma(p^a) (the lemma
+    # must find those without ord_r(p) from r - 1)
+    assert comparados >= 450 and exigidos >= 90 and via_r >= 40
+    # Planted complete sets (target t = I(N0); extras taken at the default ORDEM_BITS) whose
+    # designated large prime HAS an admissible exponent: every other list is composed by
+    # the lemma, with A_r = max(list of r) + v_r(num) - v_r(den), and must equal the
+    # direct one and keep the planted exponent.
+    chamadas = []
+    lema = omega_k._expoentes_com_primo_grande
+    monkeypatch.setattr(omega_k, "_expoentes_com_primo_grande",
+                        lambda *a: chamadas.append(a[0]) or lema(*a))
+    for sig, bits in (({5: 2, 7: 2, 67: 4}, 6), ({5: 2, 37: 2, 67: 4}, 6),
+                      ({5: 2, 7: 2, 13: 4, 47: 2}, 5)):
+        monkeypatch.setattr(omega6, "ALVO", _I(sig))
+        monkeypatch.setattr(omega_k, "ORDEM_BITS", 80)
+        extras = omega_k._alvo()[0]
+        monkeypatch.setattr(omega_k, "ORDEM_BITS", bits)
+        C = sorted(sig)
+        assert omega_k._grandes(C) == [max(C)]
+        fs = frozenset(C)
+        direto = [expoentes_validos_ordens(p, fs, extras) for p in C]
+        del chamadas[:]
+        via_nova = _listas_expoentes(C, extras, StatsK(), {}, {})
+        assert via_nova == direto and sorted(chamadas) == C[:-1], sig
+        assert all(sig[p] in lista for p, lista in zip(C, via_nova)), sig
+        # an empty list for a prime other than r kills the set (5 is fixed outside its list)
+        assert _listas_expoentes(C, extras, StatsK(), {5: 4}, {}) is None
+
+
+def test_conjunto_com_primo_grande_pode_ser_mais_estrito_que_o_fecho_direto(monkeypatch):
+    # N0 = 5^6 31^4 with 31 forced to be the large prime: t = I(N0) has 31^4 in den, so
+    # v_31(sigma(N)) = a_31 - 4 and A_r = 4 - 4 = 0 on the complete set {5, 31}. The direct
+    # closure keeps a_5 = 2 (sigma(25) = 31 lies in S); the large-prime route drops it, since
+    # it needs 31 | sigma(N). Its lists are a strict subset, and N0 is still found.
+    from core.cadeias import v_q_sigma_direto
+    from core.omega_k import _listas_expoentes
+    monkeypatch.setattr(omega6, "ALVO", I_pp(5, 6) * I_pp(31, 4))
+    monkeypatch.setattr(omega_k, "_grandes", lambda C: [31] if 31 in C else [])
+    extras = omega_k._alvo()[0]
+    assert expoentes_validos_ordens(5, frozenset({5, 31}), extras) == [2, 6]
+    assert expoentes_validos_ordens(31, frozenset({5, 31}), extras) == [4]
+    st = StatsK()
+    assert _listas_expoentes([5, 31], extras, st, {}, {}) == [[6], [4]]
+    assert st.conjuntos_com_primo_grande == 1 and v_q_sigma_direto(31, 5, 2) == 1
+    st = StatsK(k=2)
+    omega_k._certifica([5, 31], 0, 31, st, {}, {}, {}, None)
+    assert {5: 6, 31: 4} in st.amigos
 
 
 def test_caso_b1_primo_e_encontrado_sem_fatorar_r_menos_1(monkeypatch):
@@ -219,6 +361,12 @@ def test_caso_b1_primo_e_encontrado_sem_fatorar_r_menos_1(monkeypatch):
     assert all(int(n_order(7, q)) != 3 for q in S_peq if q != 7)
     exps = _expoentes_com_primo_grande(7, S_peq, 19, frozenset({3}), A_r=2)
     assert 2 in exps
+
+
+def test_light_is_kept_when_a_stats_object_is_passed():
+    # certifica_omega(k, stats=..., light=True) keeps counters only, as without stats
+    st = certifica_omega(5, stats=StatsK(), light=True)
+    assert st.light and st.pins == [] and st.conjuntos == [] and st.n_pins > 0
 
 
 def test_ramificacao_por_expoente_com_cauda_no_residual_de_k8():
@@ -260,22 +408,59 @@ def test_ramificacao_por_expoente_com_cauda_no_residual_de_k8():
 
 
 def test_ramificacao_particiona_todos_os_expoentes_e_progride():
-    # propriedades estruturais da cauda em nós soltos de k = 8 e k = 9
-    from core.omega_k import _prod_min_sup, _ramos_expoente
+    # Structural properties of the tail branching on LIVE nodes (prod_min < 9/5 < prod_sup,
+    # both times v(hi) when hi is set), a1 = 2 fixed: one prime q is branched, its exact
+    # exponents are min_q, min_q + 2, ..., A - 2 and the tail is a_q >= A with A > min_q
+    # (A <= M_q under an upper bound). The tail can be missing only under an odd upper
+    # bound M_q (Cor. 6 stores its raw bound), and then the exact exponents run up to
+    # M_q - 1. maximos travel unchanged. Every case must run: until Block 8 this test
+    # listed four nodes, three of them dead (prod_min >= 9/5), and skipped them in silence.
+    from core.omega_k import _prod_min_sup, _ramos_expoente, _virtual
     ALVO = Fraction(9, 5)
-    for C, fixos in [([5, 7, 11, 13, 31, 89], {5: 2}), ([5, 7, 11, 13, 31, 71, 97], {5: 2}),
-                     ([5, 7, 11, 13, 17, 31, 61], {5: 2}), ([5, 7, 11, 13, 19, 31], {5: 2})]:
-        prod_min, prod_sup = _prod_min_sup(C, fixos, {})
-        if prod_sup <= ALVO or prod_min >= ALVO:
-            continue
-        ramos = _ramos_expoente(C, fixos, {})
-        assert ramos is not None
-        exatos = [f for f, m, _ in ramos if m == {}]
-        caudas = [m for f, m, _ in ramos if m != {}]
-        assert len(caudas) == 1
-        (q, A), = caudas[0].items()
-        assert A % 2 == 0 and A >= 4
-        assert sorted(f[q] for f in exatos) == list(range(2, A, 2))   # partição de a_q
+    casos = [  # (C, minimos, maximos, hi)
+        ([5, 7, 11, 13, 31, 89], {}, {}, None),
+        ([5, 7, 11, 13, 31, 71], {}, {}, None),
+        ([5, 7, 11, 13, 37, 61], {}, {}, None),
+        ([5, 7, 11, 13, 41, 89, 97], {}, {}, None),
+        ([5, 7, 11, 19, 29, 37, 131], {}, {}, None),    # two exact values, a7 = 2, 4
+        ([5, 7, 11, 19, 31, 37, 101], {}, {}, None),    # two exact values, a7 = 2, 4
+        ([5, 7, 11, 13, 31, 89], {}, {11: 4}, None),
+        ([5, 7, 11, 13, 31, 89], {}, {11: 2}, None),    # the cap moves the branching to 13
+        ([5, 7, 11, 13, 31, 89], {}, {13: 6}, None),
+        ([5, 7, 11, 19, 29, 37, 131], {}, {7: 4}, None),  # the cap moves the branching to 11
+        ([5, 7, 11, 19, 29, 37, 131], {}, {7: 8}, None),  # even cap: the tail is kept
+        ([5, 7, 11, 19, 29, 37, 131], {}, {7: 5}, None),  # odd cap: no tail
+        ([5, 7, 11, 13, 31, 89], {11: 4}, {}, None),    # a tail state
+        ([5, 7, 11, 13, 31, 89], {}, {}, 10**6),        # under hi
+    ]
+    fixos = {5: 2}
+    sem_cauda = varios = 0
+    for C, minimos, maximos, hi in casos:
+        prod_min, prod_sup = _prod_min_sup(C, fixos, minimos, maximos)
+        if hi is not None:
+            prod_min, prod_sup = prod_min * _virtual(hi), prod_sup * _virtual(hi)
+        assert prod_min < ALVO < prod_sup, (C, minimos, maximos, hi)   # live: never skipped
+        ramos = _ramos_expoente(C, fixos, minimos, maximos, hi)
+        assert ramos and all(mx == maximos for _, _, mx in ramos)
+        exatos = [f for f, m, _ in ramos if m == minimos]
+        caudas = [(f, m) for f, m, _ in ramos if m != minimos]
+        assert len(caudas) <= 1
+        (q,) = {p for f in exatos for p in f if p not in fixos} | \
+               {p for _, m in caudas for p in m if m.get(p) != minimos.get(p)}
+        assert all(f == {**fixos, q: f[q]} for f in exatos)
+        amin, M = minimos.get(q, 2), maximos.get(q)
+        if caudas:
+            f, m = caudas[0]
+            A = m[q]
+            assert f == fixos and m == {**minimos, q: A}
+            assert A % 2 == 0 and A > amin and (M is None or A <= M)
+            assert sorted(f[q] for f in exatos) == list(range(amin, A, 2))   # partition of a_q
+        else:
+            assert M is not None and M % 2 == 1
+            assert sorted(f[q] for f in exatos) == list(range(amin, M + 1, 2))
+            sem_cauda += 1
+        varios += len(exatos) >= 2
+    assert sem_cauda >= 1 and varios >= 3
 
 
 def test_fixos_forcam_contribuicao_nos_orcamentos():
@@ -339,10 +524,12 @@ def test_conjunto_completo_respeita_fixos_e_minimos():
 # Alvos plantados (completude no regime do índice)
 # ---------------------------------------------------------------------------
 
-def test_planted_k7_ramo_i(monkeypatch):
+def test_planted_k7_above_every_prod_sup_of_6_primes(monkeypatch):
     # alvo plantado com I(N0) acima de qualquer prod_sup de 6 primos (máximo
-    # {5,7,11,13,17,19} = 1.949): todos os nós caem no ramo (i) e a assinatura
-    # de 7 primos tem de ser encontrada (a partição nunca é acionada).
+    # {5,7,11,13,17,19} = 1.949) e a assinatura de 7 primos tem de ser encontrada.
+    # Until Block 7 the partition refused any target other than 9/5 and every node fell
+    # into branch (i); since Block 8 it is generic (see tests/test_planted.py): here it
+    # runs at 26 of the 30 nodes, and branch (i) is still taken at 18.
     assin = {5: 2, 7: 2, 11: 2, 13: 2, 17: 2, 19: 2, 23: 2}
     alvo = _I(assin)
     assert alvo > Fraction(5, 4) * Fraction(7, 6) * Fraction(11, 10) * Fraction(13, 12) \
@@ -350,7 +537,7 @@ def test_planted_k7_ramo_i(monkeypatch):
     monkeypatch.setattr(omega6, "ALVO", alvo)   # fonte única: omega_k lê omega6.ALVO
     st = certifica_omega(7)
     assert assin in st.amigos
-    assert st.particoes == 0
+    assert st.particoes > 0     # Block 8: the partition is generic and now runs here too
     for amigo in st.amigos:
         assert _I(amigo) == alvo
 
@@ -367,9 +554,10 @@ def test_planted_k7_com_expoente_4_no_ultimo(monkeypatch):
 # Bloco 5 — último desconhecido por equações ciclotômicas
 # ---------------------------------------------------------------------------
 
-def _bruto_ultimo(C, lo, ell, eps, U_max):
+def _bruto_ultimo(C, lo, ell, eps, U_max, caps=None):
     """Força bruta independente: primos U em (lo, U_max] fora de C tais que
-    Phi_ell(U) = ell^eps · (produto de primos de C_ell)."""
+    Phi_ell(U) = ell^eps · (produto de primos de C_ell), with e_q <= caps[q] for every q
+    of C_ell that has a cap (the same specification as the exp_max of _solucoes_phi)."""
     from sympy import primerange
     C_ell = [q for q in C if (q - 1) % ell == 0]
     out = []
@@ -383,10 +571,14 @@ def _bruto_ultimo(C, lo, ell, eps, U_max):
             v += 1
         if v != eps:
             continue
+        acima = False
         for q in C_ell:
+            e = 0
             while R % q == 0:
                 R //= q
-        if R == 1:
+                e += 1
+            acima = acima or (caps is not None and q in caps and e > caps[q])
+        if R == 1 and not acima:
             out.append(U)
     return out
 
@@ -404,28 +596,45 @@ def test_solucoes_phi_batem_com_forca_bruta():
         for ell in (3, 5, 7, 11):
             C_ell = [q for q in C if (q - 1) % ell == 0]
             for eps in (0, 1):
-                esperado = _bruto_ultimo(C, lo, ell, eps, U_max)
+                esperado = _bruto_ultimo(C, lo, ell, eps, U_max, fixos)
                 obtido = sorted(_solucoes_phi(ell, eps, C_ell, _phi_primo(ell, U_max), fixos, lo, set(C)))
                 assert obtido == esperado, (C, ell, eps, obtido, esperado)
                 encontrados.update(esperado)
     assert 67 in encontrados       # não-vacuidade: 67^2 + 67 + 1 = 3·7^2·31 em {5,7,11,13,31}
+    # The capped case above, {5, 7, 13, 19, 31} with a_7 = 2, is empty (U_max = 18 < 37), so
+    # no cap is reached there. A cap that binds: Phi_3(67) = 3·7^2·31 with U_max = 96.
+    C, lo, U_max = [5, 7, 11, 13, 31], 31, 96
+    for caps, want in (({7: 2}, [67]), ({7: 3}, [67]), ({7: 1}, []), ({31: 1}, [67]),
+                       ({31: 0}, [])):
+        obtido = sorted(_solucoes_phi(3, 1, [7, 13, 31], _phi_primo(3, U_max), caps, lo, set(C)))
+        assert obtido == _bruto_ultimo(C, lo, 3, 1, U_max, caps) == want, caps
 
 
-def test_ultimo_desconhecido_resolve_o_no_quase_justo_de_k9():
+def test_ultimo_desconhecido_resolve_o_no_quase_justo_de_k9(monkeypatch):
     # C = {5,7,11,13,31,97,52361}, a1 = 2: prod_sup = 9/5 - 1,8e-8 e o índice só
     # limita U por U < 1,03e8 (5,9 milhões de primos). O solver enumera vetores de
-    # expoentes e extrai raízes inteiras — em bem menos de um segundo.
-    import time
+    # expoentes e extrai raízes inteiras, without enumerating the interval (a deterministic
+    # guard instead of a wall-clock limit: no primerange, a handful of nextprime calls).
     from core.omega_k import _cota_indice_U, _prod_min_sup, _ultimo_desconhecido
     C = [5, 7, 11, 13, 31, 97, 52361]
     prod_sup = _prod_min_sup(C, {5: 2}, {})[1]
     assert _cota_indice_U(prod_sup) > 10**8
-    t = time.perf_counter()
+    calls, real_next = [], omega_k._proximo_primo
+
+    def counted_next(n):
+        calls.append(n)
+        return real_next(n)
+
+    def no_enumeration(*args):
+        raise AssertionError(f"primerange{args} called by the solver")
+
+    monkeypatch.setattr(omega_k, "_proximo_primo", counted_next)
+    monkeypatch.setattr(omega_k, "primerange", no_enumeration)
     for k5, k3 in [(1, 0), (0, 1), (0, 0), (1, 2)]:
         cands = _ultimo_desconhecido(C, 52361, {5: 2}, k5, k3, prod_sup)
         assert cands is not None
         assert all(isprime(U) and U > 52361 for U in cands)
-    assert time.perf_counter() - t < 5
+    assert len(calls) < 1000                      # the interval holds 5.9 million primes
     # sem cota (prod_sup >= 9/5, expoentes livres) o solver recusa, honestamente
     assert _ultimo_desconhecido([5, 7, 11, 13, 31, 89], 89, {5: 2}, 1, 0, Fraction(9, 5)) is None
     # ... salvo se todos os q em C_ell têm expoente fixo (lado direito finito)
@@ -465,8 +674,7 @@ def _w_bruto(r, q):
 
 
 def test_prop9_nivel_wieferich_contra_forca_bruta():
-    # para r pequeno e todo primo q <= L, w_r(q) <= _nivel_wieferich_max(r, L); e a
-    # cota e justa em pelo menos um caso (existe q <= L atingindo-a) para algum L
+    # para r pequeno e todo primo q <= L, w_r(q) <= _nivel_wieferich_max(r, L)
     from sympy import primerange
     from core.omega_k import _min_residuo_teichmuller, _nivel_wieferich_max
     for r in (3, 5, 7, 11, 13, 31):
@@ -533,14 +741,19 @@ def test_cota_L_desconhecidos_e_uma_cota():
 
 
 def test_cor6_majora_os_expoentes_de_amigos_plantados(monkeypatch):
-    # Em qualquer no (C parcial, s desconhecidos, alguns expoentes fixos) a cota
-    # A_r tem de ser >= o expoente verdadeiro de r no amigo plantado.
+    # Coverage: prefix nodes (C = the smallest primes of the friend, lo = max(C)) of three
+    # planted friends, s in {0, 1, 2}, a1 and p_2 fixed or free, no maximos. L is the bound
+    # the certifier computes (L1 for s = 1, the B_min form for s = 2 with lo >= B_min),
+    # asserted to bound the planted unknowns, and A_r must be >= the true exponent of r.
+    # s >= 3 (and s = 2 with lo < B_min) has no uniform L and is skipped. The bound with
+    # attained upper bounds (maximos) is tested in tests/test_planted.py.
     from core.omega_k import _cota_L_desconhecidos, _cota_expoente_conhecido
     assinaturas = [
         {5: 2, 7: 2, 11: 2, 13: 2, 17: 2, 19: 2, 23: 4},
         {5: 4, 7: 2, 11: 6, 13: 2, 17: 2, 19: 4, 23: 2},
         {5: 2, 7: 8, 11: 2, 13: 4, 17: 2, 19: 2, 23: 2, 29: 2},
     ]
+    feitos = {0: 0, 1: 0, 2: 0}
     for assin in assinaturas:
         alvo = _I(assin)
         monkeypatch.setattr(omega6, "ALVO", alvo)
@@ -550,9 +763,10 @@ def test_cor6_majora_os_expoentes_de_amigos_plantados(monkeypatch):
             s = len(primos) - n_conhecidos
             for fixos in ({}, {5: assin[5]}, {5: assin[5], primos[1]: assin[primos[1]]}):
                 cotas = _cota_L_desconhecidos(C, s, fixos, {}, None, None, max(C)) if s else None
-                if s and (cotas is None or cotas[2] is None or max(C) < cotas[1]):
-                    continue        # sem cota valida para todos os desconhecidos neste no
-                L = None if cotas is None else max(cotas[2], max(primos))
+                if s and (cotas is None or cotas[2] is None):
+                    continue        # no uniform L for the unknowns at this node
+                L = None if cotas is None else cotas[2]
+                assert L is None or L >= max(primos), (assin, C, s, fixos, cotas)
                 for r in C:
                     if r in fixos:
                         continue
@@ -560,6 +774,8 @@ def test_cor6_majora_os_expoentes_de_amigos_plantados(monkeypatch):
                     if A is None:
                         continue
                     assert A >= assin[r], (assin, C, s, fixos, r, A)
+                    feitos[s] += 1
+    assert all(feitos.values()), feitos
 
 
 def test_cor6_no_quase_justo_de_k9_da_cotas_finitas():
@@ -585,13 +801,29 @@ def test_cor6_no_quase_justo_de_k9_da_cotas_finitas():
     assert ramos and all(m == {} for _, m, _ in ramos)
     r = next(iter(set(ramos[0][0]) - {5}))
     assert sorted(f[r] for f, _, _ in ramos) == list(range(2, max(f[r] for f, _, _ in ramos) + 1, 2))
-    # as cotas de todos os livres viajam nos filhos como maximos, e o ramo usa a menor
+    # the bounds of the free primes of the group examined travel in the children as
+    # maximos, and the branch uses the one with fewest branches
     mx = ramos[0][2]
     # Block 7: bounds of expensive primes (r > R_CHEAP_PROP9, here 52361) are computed
     # only when no cheap prime can be branched, so only the cheap ones travel as maximos
     assert set(mx) == {7, 11, 13, 31, 97} and all(v >= 2 for v in mx.values())
     assert r in mx
     assert max(f[r] for f, _, _ in ramos) == mx[r] - (mx[r] % 2)
+
+
+def test_cor6_kill_at_a_state_of_the_k9_tree():
+    # A state on which the k = 9 run kills by the finite exponent bound (cor6_mortos = 4 at
+    # k = 9): a_17 >= 12 was committed by a tail, and the bound gives A_17 = 8 < 12.
+    C = [5, 7, 11, 17, 19, 2213, 19531]
+    fixos = {5: 6, 11: 2}
+    minimos = {19531: 4, 2213: 4, 19: 12, 17: 12}
+    L1, B_min, L = omega_k._cota_L_desconhecidos(C, 2, fixos, minimos, {}, None, 2213)
+    assert 2213 >= B_min and L is not None
+    assert omega_k._cota_expoente_conhecido(17, C, 2, fixos, L, {}) == 8 < minimos[17]
+    assert omega_k._ramos_cor6(C, 2, 2213, fixos, minimos, {}) == []
+    st = StatsK(k=9)
+    omega_k._certifica(C, 2, 2213, st, dict(fixos), dict(minimos), {}, None)
+    assert st.cor6_mortos >= 1 and st.amigos == []
 
 
 def test_lema_do_fecho_total_mata_no_tudo_fixo_sem_pins(monkeypatch):
@@ -832,15 +1064,12 @@ def test_block7_last_unknown_solver_uses_hi():
 def test_block7_near_tight_k9_node_closes_without_enumeration():
     # Before Block 7 this node enumerated ~11 million primes for its smallest unknown
     # (U_1 < 2.05e8). With the split it closes in a few dozen nodes.
-    import time
     st = StatsK(k=9)
-    t = time.perf_counter()
     omega_k._certifica(NEAR_TIGHT, 2, 52361, st, {5: 2}, {}, {}, None)
     assert st.amigos == []
     assert st.splits >= 1 and st.dead_hi >= 1 and st.cor6_ramos >= 1
     assert st.ramo_i == 0                         # the index enumeration was never needed
-    assert st.nos < 500
-    assert time.perf_counter() - t < 60
+    assert st.nos < 500                           # (a node count, not a wall-clock limit)
 
 
 def test_block7_coprime_base_properties():
@@ -954,14 +1183,35 @@ def test_block7_index_loop_skips_exactly_the_dead_prefix(monkeypatch):
         assert com == sem, (C, s, hi)
 
 
+_STRATEGY_CACHES = ("_divisao_pequena", "_classifica_cofator", "_fatora", "_phi_valor")
+
+
+@pytest.fixture(scope="module")
+def strategy_trees_k7():
+    """The k = 7 trees of the default strategy and of LIMIAR_INDICE = 0."""
+    trees = {}
+    for cfg in ({}, {"LIMIAR_INDICE": 0}):
+        with pytest.MonkeyPatch.context() as mp:
+            for name, value in cfg.items():
+                mp.setattr(omega_k, name, value)
+            for f in _STRATEGY_CACHES:
+                getattr(omega_k, f).cache_clear()
+            st = certifica_omega(7, light=True)
+        trees[tuple(cfg)] = {f: getattr(st, f) for f in _TREE_COUNTERS}
+    for f in _STRATEGY_CACHES:
+        getattr(omega_k, f).cache_clear()
+    return trees
+
+
+# At k <= 7 the default never meets a long index interval, so LIMIAR_INDICE = 10**12 and
+# R_CHEAP_PROP9 = 0 alone (read only after a long interval) would run the default tree.
 @pytest.mark.parametrize("cfg", [
     {},                                   # default strategy
-    {"LIMIAR_INDICE": 10**12},            # never split, never use the finite exponent bound
     {"LIMIAR_INDICE": 0},                 # split / bound wherever applicable
-    {"R_CHEAP_PROP9": 0},                 # no "cheap primes first" preference
+    {"LIMIAR_INDICE": 0, "R_CHEAP_PROP9": 0},   # and no "cheap primes first" preference
     {"FATORA_BITS": 40},                  # tiny factoring budget: more unfactored residues
 ])
-def test_block7_verdict_does_not_depend_on_the_strategy(monkeypatch, cfg):
+def test_block7_verdict_does_not_depend_on_the_strategy(monkeypatch, cfg, strategy_trees_k7):
     # the strategy thresholds only choose between sound alternatives: every variant
     # must certify k = 6 and k = 7 (no friend, no NaoCertificavel); trees may differ
     for name, value in cfg.items():
@@ -972,7 +1222,10 @@ def test_block7_verdict_does_not_depend_on_the_strategy(monkeypatch, cfg):
         st = certifica_omega(k, light=True)
         assert st.amigos == [] and st.assinaturas_testadas == 0
         assert st.pins == [] and st.conjuntos == [] and st.n_pins > 0     # light mode: counters only
-    if cfg == {"LIMIAR_INDICE": 0}:
+    if cfg:      # a variant must change the k = 7 tree of the strategy it extends, or it tests nothing
+        base = ("LIMIAR_INDICE",) if "R_CHEAP_PROP9" in cfg else ()
+        assert {f: getattr(st, f) for f in _TREE_COUNTERS} != strategy_trees_k7[base], cfg
+    if cfg.get("LIMIAR_INDICE") == 0:
         assert st.splits > 0 and st.dead_hi > 0 and st.cor6_ramos > 0     # the new paths really ran
     for f in (omega_k._divisao_pequena, omega_k._classifica_cofator, omega_k._fatora, omega_k._phi_valor):
         f.cache_clear()
@@ -1145,6 +1398,26 @@ def test_iroot_is_the_exact_floor_root():
             assert x**e <= n < (x + 1) ** e, (n, e)
 
 
+def test_solver_root_agrees_with_the_exact_floor_root():
+    # The last-unknown solver inverts Phi_ell by u = floor(R^(1/(ell - 1))) with
+    # sympy.integer_nthroot, whose fallback without gmpy2 starts from a float and corrects
+    # it with integer loops. A root off by one would drop the only U of a right-hand side
+    # R, so it is pinned here against the exact _iroot on values shaped like the solver's,
+    # up to the size gate SOLVER_BITS (u^(ell-1) < Phi_ell(u) < (u+1)^(ell-1), ell >= 3).
+    import random
+    from sympy import integer_nthroot
+    from core.omega_k import SOLVER_BITS, _iroot, _phi_primo
+    rng = random.Random(11)
+    for ell in (3, 5, 7, 11, 13, 31, 101, 199):
+        gate = SOLVER_BITS // (ell - 1)
+        for bits in (rng.randint(2, 64), rng.randint(65, gate), gate):
+            u = rng.getrandbits(bits) | 2
+            P = _phi_primo(ell, u)
+            assert _iroot(P, ell - 1) == u
+            for R in (P - 1, P, P + 1, u ** (ell - 1) - 1, u ** (ell - 1), (u + 1) ** (ell - 1) - 1):
+                assert int(integer_nthroot(R, ell - 1)[0]) == _iroot(R, ell - 1), (ell, bits)
+
+
 def test_prime_power_cofactors_are_classified_exactly():
     # Panel finding: sympy.perfect_power decides odd exponents with a float filter for
     # bases below 2^40; a false negative would turn a prime power r^e into "composite"
@@ -1169,6 +1442,18 @@ def test_prime_power_cofactors_are_classified_exactly():
     val = _phi_valor(3, 2288805793)
     assert val == 3 * 1321442641**2 and isprime(1321442641)
     assert _novos_e_resto(val, {3, 5, 2288805793}, 1) == ((1321442641,), 1)
+
+
+def test_primos_permitidos_acima_de_10_5_saem_do_cofator():
+    # _divisao_pequena removes every prime below 10^5 and none above: a permitted prime
+    # above 10^5 (a large prime of C, an extra, a pin of an earlier piece) is removed by the
+    # loop over `permitidos` in _novos_e_resto; counted as new it would kill falsely
+    from sympy import nextprime
+    from core.omega_k import _divisao_pequena, _novos_e_resto
+    P, r = int(nextprime(10**12)), int(nextprime(10**15))
+    assert _divisao_pequena(9 * P**2 * r) == ((3,), P**2 * r)
+    assert _novos_e_resto(9 * P**2 * r, {3, P}, 1) == ((r,), 1)
+    assert _novos_e_resto(7 * 100003, {7, 100003}, 0) == ((), 1)
 
 
 def test_unknown_count_does_not_depend_on_the_order_of_the_fixed_primes():
@@ -1209,6 +1494,58 @@ def test_big_prime_lemma_composite_case_against_brute_force():
         assert m - 1 in validos
         exps = _expoentes_com_primo_grande(p, frozenset(S_peq), r, frozenset({3}), 1)
         assert [a for a in exps if a <= 60] == validos, (p, m)
+
+
+def test_big_prime_lemma_with_generic_extras_against_the_exact_closure():
+    # Block 8: the lemma takes extras = primes(num). Cases built from closures sigma(p^a):
+    # r is one of its primes (the lemma never factors r - 1), the others are split at random
+    # between S' and the extras. The lemma must return every exponent of the exact closure
+    # of S' + {r} (expoentes_validos_ordens, which does factor r - 1) with
+    # v_r(sigma(p^a)) <= A_r, and nothing outside that closure.
+    import random
+    from sympy import factorint, primerange
+    from core.cadeias import v_q_sigma_direto
+    from core.omega_k import _expoentes_com_primo_grande
+
+    def strip(n, permitidos):
+        for q in permitidos:
+            while n % q == 0:
+                n //= q
+        return n
+
+    rng = random.Random(77)
+    small = [int(q) for q in primerange(5, 400)]
+    compared = required = needs_extra = needs_r = 0
+    for p in (5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 61, 71):
+        for a in range(2, 20, 2):
+            s = sigma_pp(p, a)
+            if s.bit_length() > 64:
+                continue
+            fac = sorted(int(q) for q in factorint(s))
+            big = [f for f in fac if f > p]
+            if not big:
+                continue
+            for trial in range(4):
+                r = max(big) if trial < 2 else rng.choice(big)
+                rest = [f for f in fac if f != r]
+                ex = frozenset(f for f in rest if rng.random() < 0.5)
+                if rng.random() < 0.7:
+                    ex |= {3}
+                S_peq = (frozenset(rest) - ex - {3}) | {p}
+                S_peq |= frozenset(q for q in rng.sample(small, rng.randrange(0, 4)) if q != r)
+                fs = S_peq | {r}
+                full = expoentes_validos_ordens(p, fs, ex)
+                vr = {x: v_q_sigma_direto(r, p, x) for x in full}
+                for A_r in sorted({max(vr.values(), default=0), 2, 40}):
+                    got = _expoentes_com_primo_grande(p, S_peq, r, ex, A_r)
+                    must = [x for x in full if vr[x] <= A_r]
+                    assert set(must) <= set(got) <= set(full), (p, sorted(S_peq), r, sorted(ex), A_r)
+                    compared += 1
+                    required += len(must)
+                    needs_r += sum(1 for x in must if vr[x] > 0)
+                    needs_extra += sum(1 for x in must
+                                       if strip(sigma_pp(p, x), (set(fs) | {3}) - {p}) != 1)
+    assert compared >= 500 and needs_r >= 500 and needs_extra >= 200
 
 
 def test_casos_ell_guard_counts_the_assignments_exactly(monkeypatch):
@@ -1271,3 +1608,126 @@ def test_teichmuller_minima_match_the_direct_definition():
         assert mins == [direct(r, a) for a in range(2, len(mins) + 2)]
         assert omega_k._nivel_wieferich_max(r, 10**6) == len(mins)
     omega_k._TEICH_MIN.clear()
+
+
+# ---------------------------------------------------------------------------
+# Block 8, whole-code pass: paths that no real run with k <= 9 executes
+# ---------------------------------------------------------------------------
+
+def test_casos_ell_kills_a_fixed_feeder_beyond_its_cap(monkeypatch):
+    # 11 = 1 (mod 5) fixed at a_11 = 24 carries v5(25) = 2 levels of the budget of 5, and no
+    # r in C ∪ {3} other than 11 witnesses one (ord_3(11) = 2, ord_5(11) = 1): two
+    # witness-less levels need two distinct unknowns, s = 1. With the per-feeder cap
+    # the assignment dies at k_fixo > k_max[q]; without it, in _fecha (len(faltam) > s).
+    for T in (2, 3, 5):
+        assert omega_k._casos_ell([5, 11], 1, 11, 5, T, {5: 2, 11: 24}) == [], T
+        monkeypatch.setattr(omega_k, "_PRUNE_FEEDERS", False)
+        assert omega_k._casos_ell([5, 11], 1, 11, 5, T, {5: 2, 11: 24}) == [], T
+        monkeypatch.setattr(omega_k, "_PRUNE_FEEDERS", True)
+    # one witness-less level fits one slot: a_11 = 4, Phi_5(11) = 5 · 3221 pins 3221
+    assert omega_k._casos_ell([5, 11], 1, 11, 5, 1, {5: 2, 11: 4}) == [("pin", (3221,))]
+
+
+def test_open_case_is_refused_when_the_index_gives_no_bound(monkeypatch):
+    # target I(5^2 7^4), node C = {5, 7}, s = 1, a_5 = 2, a_7 <= 4: the pair (0, 0) stays
+    # open and prod_sup = I(5^2) I(7^4) equals the target, so the index does not bound the
+    # unknown: the node must be refused (no silent gap), never enumerated or dropped.
+    t = I_pp(5, 2) * I_pp(7, 4)
+    monkeypatch.setattr(omega6, "ALVO", t)
+    assert omega_k._prod_min_sup([5, 7], {5: 2}, {}, {7: 4})[1] == t
+    with pytest.raises(NaoCertificavel, match="casos abertos"):
+        omega_k._certifica([5, 7], 1, 7, StatsK(k=3), {5: 2}, {}, {7: 4}, None)
+
+
+def test_two_large_primes_in_a_complete_set_are_refused():
+    from sympy import nextprime
+    r1 = int(nextprime(2**81))
+    r2 = int(nextprime(r1))
+    with pytest.raises(NaoCertificavel, match="2 primos com r-1 acima"):
+        omega_k._listas_expoentes([5, r1, r2], omega_k._alvo()[0], StatsK(), {}, {})
+
+
+def test_target_with_an_unsplit_composite_part_is_refused(monkeypatch):
+    # _fatores_do_alvo: a composite part of num or den above FATORA_BITS that Pollard rho
+    # does not split is refused (never factored for hours); k < 1 is an error
+    from sympy import nextprime
+    p, q = int(nextprime(2**30)), int(nextprime(2**62))
+    assert (p * q).bit_length() > omega_k.FATORA_BITS
+    assert omega_k._fatores_do_alvo(7 * p * q) == {7: 1, p: 1, q: 1}
+    monkeypatch.setattr(omega_k, "pollard_rho", lambda *a, **k: None)
+    with pytest.raises(NaoCertificavel, match="was not split"):
+        omega_k._fatores_do_alvo(7 * p * q)
+    with pytest.raises(ValueError):
+        certifica_omega(0)
+
+
+def test_last_unknown_solver_declines_with_a_large_prime_in_the_pool():
+    # L(C) needs the odd primes of r - 1 for every r in C ∪ extras; with r - 1 not factored
+    # the set would be incomplete, so _L_de gives None and the whole solver declines
+    from sympy import nextprime
+    r1 = int(nextprime(2**81))
+    C = [5, 7, r1]
+    assert omega_k._L_de(C) is None and omega_k._L_de([5, 7]) == {3}
+    ps = omega_k._prod_min_sup(C, {5: 2}, {}, {})[1]
+    assert ps < Fraction(9, 5)
+    assert omega_k._ultimo_desconhecido(C, r1, {5: 2}, 0, 0, ps) is None
+
+
+def test_big_prime_lemma_case_b2_against_the_direct_list():
+    # Case (B2): S = {5, 11, 31, 71, 181, 1741} with r = 31 designated large. The odd orders
+    # of 5 modulo the other primes are D = {5, 15}; m = 15 has exactly one divisor outside
+    # D, 3 = ord_31(5), so a_5 = 14 comes from (B2) alone ((A) needs every divisor in D).
+    # With A_r = 1 (sigma(5^2) = 31 needs v_31 = 1) the lemma gives the direct list.
+    from core.cadeias import _candidatos_m, ordens_impares
+    from core.omega_k import _e_ordem, _expoentes_com_primo_grande
+    S = frozenset({5, 11, 31, 71, 181, 1741})
+    S_peq = S - {31}
+    D = ordens_impares(5, S_peq, frozenset({3}))
+    assert set(D) == {5, 15} and 15 not in _candidatos_m(D)
+    assert int(n_order(5, 31)) == 3 and _e_ordem(5, 31, 3)
+    direto = expoentes_validos_ordens(5, S, frozenset({3}))
+    assert direto == [2, 4, 14]
+    assert _expoentes_com_primo_grande(5, S_peq, 31, frozenset({3}), 1) == direto
+    # without the factor 31^1 (A_r = 0) only the exponent 2 (sigma(5^2) = 31) is dropped
+    assert _expoentes_com_primo_grande(5, S_peq, 31, frozenset({3}), 0) == [4, 14]
+
+
+def test_new_prime_of_sigma_5_a1_at_most_lo_kills_the_case():
+    # C = {5, 37}, s = 2: the range of a1 is {2} and sigma(5^2) = 31 is a new prime. With
+    # lo = 5 it is a pin; with lo = 37 every prime of S up to 37 is already in C
+    # (invariant of lo), so the case dies.
+    assert omega_k._faixa_a1([5, 37], 2) == (2, 2)
+    casos = omega_k._particao([5, 37], 2, 5, StatsK(), {}, {})
+    assert [(c.pins, c.fixos) for c in casos] == [((31,), {5: 2})]
+    assert omega_k._particao([5, 37], 2, 37, StatsK(), {}, {}) == []
+
+
+def test_pieces_beyond_pin_bits_are_skipped_not_killed(monkeypatch):
+    # The exact size gate of _phi_valor: a piece with more than PIN_BITS bits is not
+    # factored; the closure loses that information (counted in sem_fecho), never kills.
+    pin_bits = omega_k.PIN_BITS
+    omega_k._phi_valor.cache_clear()
+    monkeypatch.setattr(omega_k, "PIN_BITS", 6)
+    try:
+        assert omega_k._phi_valor(3, 5) == 31               # 5 bits
+        assert omega_k._phi_valor(3, 11) is None             # 133 = 7 · 19: 8 bits
+        sem = [0]
+        assert omega_k._novos_de_sigma(11, 2, {3, 5, 11}, 1, sem) == ((), 0) and sem == [1]
+        assert omega_k._novos_de_sigma(5, 2, {3, 5}, 1, sem) == ((31,), 0) and sem == [1]
+    finally:
+        monkeypatch.setattr(omega_k, "PIN_BITS", pin_bits)
+        omega_k._phi_valor.cache_clear()
+    assert omega_k._novos_de_sigma(11, 2, {3, 5, 11}, 2, [0]) == ((7, 19), 0)
+
+
+def test_prop9_bound_declines_above_r_max(monkeypatch):
+    # Prop. 9 costs O(r) per level: above R_MAX_PROP9 the Wieferich level of the unknowns
+    # is not computed and the finite exponent bound declines (None) whenever s >= 1
+    C = [5, 7, 11, 13, 31, 97, 52361]
+    L = 10**6
+    assert omega_k._nivel_wieferich_max(31, L) is not None
+    assert omega_k._cota_expoente_conhecido(31, C, 2, {5: 2}, L) is not None
+    monkeypatch.setattr(omega_k, "R_MAX_PROP9", 30)
+    assert omega_k._nivel_wieferich_max(31, L) is None
+    assert omega_k._cota_expoente_conhecido(31, C, 2, {5: 2}, L) is None
+    assert omega_k._cota_expoente_conhecido(31, C, 0, {5: 2}, None) is not None   # no unknown

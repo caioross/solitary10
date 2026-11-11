@@ -1,8 +1,12 @@
-"""Testes das erratas à literatura (experiments/verifica_erratas.py, results/ERRATA.md).
+"""Tests of the errata to the literature (experiments/verifica_erratas.py, results/ERRATA.md).
 
-Cada teste é uma verificação independente e exata (int / Fraction) de um defeito
-catalogado. Os testes NÃO dependem de sympy nem de rede: reimplementam o que
-precisam ou chamam o script de verificação.
+Each test is an independent, exact check (int / Fraction) of a catalogued defect. The
+tests need no network: they reimplement what they need or call the verification
+script. sympy appears only in test_corollary_6_of_thackeray_is_false_as_printed, where
+n_order and factorint cross-check the orders and valuations that the script computes
+with its own arithmetic. The section headers below number the blocks as the script
+does, not as the entries of results/ERRATA.md; the docstring of the script maps one to
+the other.
 """
 from fractions import Fraction
 
@@ -18,6 +22,8 @@ from experiments.verifica_erratas import (
     e4_remark_37,
     e5_escopo_teorema_12,
     e6_caso12,
+    e7_corollary6,
+    corollary6_literal,
     parte_fixa,
     particoes,
     primo,
@@ -133,3 +139,36 @@ def test_caso12_typo_sem_consequencia():
     q = I(5, 2) * I(7, 2) * I(11, 2) * I(13, 2) * I(23, 2) * I(31, 2)
     assert p > Fraction(9, 5) and q > Fraction(9, 5)
     e6_caso12(verboso=False)
+
+
+def test_corollary_6_of_thackeray_is_false_as_printed():
+    # arXiv:2310.15900v2, Corollary 6: hypotheses as printed hold, the bound fails
+    res = e7_corollary6(verbose=False)
+    assert res == {"{11: 2, 5: 604}": {"k": 2, "c": 1, "v_r_I": 1, "bound": 1, "v_r_n": 2},
+                   "{13: 2, 3: 506}": {"k": 2, "c": 1, "v_r_I": 1, "bound": 1, "v_r_n": 2}}
+    # independent recomputation with sympy of the first one
+    from sympy import factorint, n_order
+    sigma = (5**605 - 1) // 4 * 133
+    assert n_order(5, 11) == 5 and 605 % 5 == 0
+    assert factorint(5**5 - 1)[11] == 1
+    v11 = 0
+    while sigma % 11**(v11 + 1) == 0:
+        v11 += 1
+    assert v11 == 3                                   # v_11(sigma(n)) = 3, v_11(n) = 2
+    assert sigma % 12207031 == 0 and 12207031 % 11 == 1 and 12207031 == (5**11 - 1) // 4
+    # and the second one, n = 13^2 * 3^506
+    sigma2 = (3**507 - 1) // 2 * (13**3 - 1) // 12
+    assert n_order(3, 13) == 3 and 507 % 3 == 0 and factorint(3**3 - 1)[13] == 1
+    v13 = 0
+    while sigma2 % 13**(v13 + 1) == 0:
+        v13 += 1
+    assert v13 == 3                                   # v_13(sigma(n)) = 3, v_13(n) = 2
+    assert sigma2 % 797161 == 0 and 797161 % 13 == 1 and 797161 == (3**13 - 1) // 2
+
+
+def test_corollary_6_literal_evaluator_on_a_small_case():
+    # n = 11^2 * 5^4: sigma(5^4) = 11 * 71, so v_11(I(n)) = 1 - 2 = -1, c = v_11(5^5 - 1) = 1
+    res = corollary6_literal({11: 2, 5: 4}, 11)
+    assert (res["k"], res["c"], res["v_r_I"], res["bound"], res["v_r_n"]) == (2, 1, -1, 3, 2)
+    assert res["r_divides_gcd"] and res["hypothesis_as_printed"]
+

@@ -27,6 +27,14 @@ Blocos:
       da prova (1 + B/A < X_r) é impossível para qualquer (A, B) positivo.
   E6  [P1] Caso-12 do Teorema 1.2: fator impresso 381/361 = I(19^2) no lugar de
       I(23^2) = 553/529; recomputado, a conclusão do caso se mantém.
+  E7  [P5] arXiv:2310.15900v2 (Thackeray), Corollary 6: the hypothesis is stated for the
+      prime factors q > r of n only, but the proof needs it for every prime q > r.
+      Counterexamples n = 11^2 * 5^604 and n = 13^2 * 3^506 (bound 1, exponent 2).
+      (Written in English, as everything added since Block 7.)
+
+The block names follow the history of this script, not the entry numbers of
+results/ERRATA.md: e1, e2 -> ERRATA E1; e3, e4 -> E2 (E3 follows from E2); e5 -> E4;
+e6 -> E5; e7 -> E6.
 """
 from __future__ import annotations
 
@@ -339,13 +347,99 @@ def e6_caso12(verboso: bool = True) -> dict:
     return {"c1": str(c1), "c2": str(c2)}
 
 
+# -------------------------------------------------------------------------------- E7
+def _v(p: int, n: int) -> int:
+    v = 0
+    while n % p == 0:
+        n //= p
+        v += 1
+    return v
+
+
+def _order(q: int, r: int) -> int:
+    """Multiplicative order of q modulo the prime r (r does not divide q), by search."""
+    x, o = q % r, 1
+    while x != 1:
+        x = x * q % r
+        o += 1
+    return o
+
+
+def corollary6_literal(sig: dict[int, int], r: int) -> dict:
+    """Evaluate Corollary 6 of arXiv:2310.15900v2 literally on n = prod p^a (odd square).
+    Returns its hypotheses, the least admissible c, the bound and v_r(n)."""
+    n = 1
+    sigma = 1
+    for p, a in sig.items():
+        n *= p ** a
+        sigma *= (p ** (a + 1) - 1) // (p - 1)
+    k = len(sig)
+    c = 0
+    for q, a in sig.items():
+        if q != r and (q - 1) % r != 0 and (a + 1) % _order(q, r) == 0:
+            c += _v(r, q ** _order(q, r) - 1)
+    v_r_I = _v(r, sigma) - _v(r, n)
+    hyp_literal = all(_v(q, sigma) == a for q, a in sig.items() if q > r)
+    bound = (k - 1) ** 2 + c - v_r_I
+    return {"n_is_odd_square": n % 2 == 1 and all(a % 2 == 0 for a in sig.values()),
+            "k": k, "r_divides_gcd": n % r == 0 and sigma % r == 0, "c": c,
+            "v_r_I": v_r_I, "hypothesis_as_printed": hyp_literal, "bound": bound,
+            "v_r_n": sig[r], "sigma": sigma, "n": n}
+
+
+def e7_corollary6(verbose: bool = True) -> dict:
+    """[P5] Corollary 6 of arXiv:2310.15900v2 is false as printed: two counterexamples,
+    the step of the proof that fails, and the hypothesis that repairs it."""
+    out = {}
+    for sig, r, bang in (({11: 2, 5: 604}, 11, 12207031), ({13: 2, 3: 506}, 13, 797161)):
+        res = corollary6_literal(sig, r)
+        if not (res["n_is_odd_square"] and res["k"] > 1 and res["r_divides_gcd"]
+                and res["hypothesis_as_printed"]):
+            falha("the counterexample does not satisfy the printed hypotheses")
+        if not res["v_r_n"] > res["bound"]:
+            falha("the printed bound is not violated")
+        # the step that fails: the Bang prime q_r of sigma(p^a) is Phi_r(p), a prime with
+        # o_{q_r}(p) = r, so q_r = 1 (mod r); it divides sigma(n) but not n, so
+        # "v_q(n) = v_q(sigma(n)) > 0" does not hold for it
+        p = min(sig)
+        if bang != (p ** r - 1) // (p - 1):
+            falha("the Bang prime is not Phi_r(p)")
+        if any(bang % d == 0 for d in range(2, 5000) if d * d <= bang):
+            falha("Phi_r(p) is not prime")
+        if not (pow(p, r, bang) == 1 and p % bang != 1 and bang % r == 1):
+            falha("the order of p modulo Phi_r(p) is not r")
+        if not (res["sigma"] % bang == 0 and res["n"] % bang != 0):
+            falha("Phi_r(p) does not divide sigma(n), or divides n")
+        # with the hypothesis for EVERY prime q > r the corollary does not apply here
+        if _v(bang, res["sigma"]) == _v(bang, res["n"]):
+            falha("the repaired hypothesis would still hold")
+        out[str(sig)] = {key: res[key] for key in ("k", "c", "v_r_I", "bound", "v_r_n")}
+        if verbose:
+            p = min(sig)
+            print(f"E7  [P5] Corollary 6, n = {r}^2 * {p}^{sig[p]}, r = {r}: hypotheses hold as "
+                  f"printed (no prime factor of n above r), c = {res['c']}, "
+                  f"v_r(I(n)) = {res['v_r_I']}")
+            print(f"    printed bound (k-1)^2 + c - v_r(I(n)) = {res['bound']}, but v_r(n) = "
+                  f"{res['v_r_n']}  [VIOLATED]")
+            print(f"    failing step: the prime {bang} = 1 (mod {r}) divides sigma(n), not n")
+    # for a friend of 10, I(n) = 9/5: no prime q > 5 divides 9 or 5, so v_q(I(n)) = 0 for
+    # every prime q > 5 and the repaired hypothesis holds (Corollary 7 is unaffected)
+    friend_ok = all(d <= 5 for d in range(2, 46) if 45 % d == 0 and all(d % e for e in range(2, d)))
+    if not friend_ok:
+        falha("the repaired hypothesis fails for I(n) = 9/5")
+    if verbose:
+        print("    repaired hypothesis: v_q(I(n)) = 0 for EVERY prime q > r; for I(n) = 9/5 "
+              "the primes of 9 and 5 are <= 5, so it holds  [OK]")
+    return out
+
+
 # ------------------------------------------------------------------------------ main
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Verifica, com aritmética exata, as erratas catalogadas em "
                     "results/ERRATA.md (papers arXiv:2404.00624, 2409.04451, "
-                    "2412.02701).")
-    ap.add_argument("--bloco", choices=["e1", "e2", "e3", "e4", "e5", "e6", "todos"],
+                    "2412.02701, 2310.15900).")
+    ap.add_argument("--bloco", choices=["e1", "e2", "e3", "e4", "e5", "e6", "e7", "todos"],
                     default="todos", help="qual bloco de verificação rodar")
     ap.add_argument("--a-max", type=int, default=8,
                     help="limite de a nas buscas exaustivas (E1/E4)")
@@ -358,8 +452,10 @@ def main() -> int:
         "e4": lambda: e4_remark_37(a_max=args.a_max),
         "e5": lambda: (e5_escopo_teorema_12(), e5b_instancias()),
         "e6": lambda: e6_caso12(),
+        "e7": lambda: e7_corollary6(),
     }
-    ordem = ["e1", "e2", "e3", "e4", "e5", "e6"] if args.bloco == "todos" else [args.bloco]
+    ordem = (["e1", "e2", "e3", "e4", "e5", "e6", "e7"] if args.bloco == "todos"
+             else [args.bloco])
     for nome in ordem:
         blocos[nome]()
         print()

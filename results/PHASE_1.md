@@ -596,9 +596,12 @@ p^ℓ ≡ 1 mod r). The valuations of the reconstruction are the direct ones of 
 large primes in the same set: `NaoCertificavel`.
 
 Validation: forcing `ORDEM_BITS = 12` in the tests, the real complete sets of k = 7 with
-exactly one "large" prime (13 sets with the current tree; the test requires ≥ 10 —
+exactly one "large" prime (13 sets with the current tree; the test required ≥ 10, since Block 8 exactly 13 —
 corrected in Block 7, the text said ≥ 20) produce through the new route **exactly** the
-lists of the direct route (`expoentes_validos_ordens`); and the prime case (B1) is
+lists of the direct route (`expoentes_validos_ordens`) [corrected in Block 8: on all 13
+sets the large prime has no admissible exponent of its own, so the lemma was never called
+and nothing was compared; in general its lists are a *subset* of the direct ones, since
+it also uses v_r(σ(N)) ≤ A_r; the comparison now made is described in §8.6]; and the prime case (B1) is
 exercised in {5,7,11,13,31}+19 (ord₁₉(7) = 3, 3 is not an order of 7 modulo any other
 prime of the set; σ(7²) = 3·19 closes). Honesty: for k ≤ 8 no prime of a complete set
 exceeded 65 bits (`conjuntos_com_primo_grande = 0`), the route was only exercised by
@@ -885,8 +888,10 @@ What closes them, from the reading of the note on arXiv:2310.15900 (§2, Cor. 6 
 Prop. 9): a **finite bound for the exponent of a known prime r** —
 a_r ≤ (k − 1)² + c − v_r(I(N)), where (k−1)² counts the levels v_r(a_q + 1) (each level
 requires a distinct witness ≡ 1 mod rʲ, as in our universal bound for a₁, which is the
-case r = 5 with c = 0) and c sums the "Wieferich excesses" v_r(q^{ord_r(q)} − 1) − 1 of
-the q ∈ S with ord_r(q) | a_q + 1 — computable for q ∈ C and bounded for the unknowns
+case r = 5 with c = 0) and c bounds the sum of the valuations v_r(q^{ord_r(q)} − 1) of
+the q ∈ S with gcd(r, q(q − 1)) = 1 and ord_r(q) | a_q + 1 [corrected in Block 8: the text
+said "Wieferich excesses v_r(q^{ord_r(q)} − 1) − 1"; the paper's c is the full valuation,
+which is what §6.1 and the code use] — computable for q ∈ C and bounded for the unknowns
 ≤ L by Proposition 9 (Lemma 8: the solutions of x^{r−1} ≡ 1 mod r^a are the Hensel lifts
 y^{r^{a−1}} mod r^a, y = 1..r−1; if the smallest of them is > L, no q ≤ L has level ≥ a).
 With a_r finite, the tail of r becomes exact branches, and each σ(r^{a_r}) closes in
@@ -926,7 +931,10 @@ w_r(q) = v_r(q^o − 1) ≥ 1 is the Wieferich level of q at r.
 - **Levels.** r^j | (a_q+1)/o (j = 1..v) ⟹ Φ_{r^j o}(q) | σ(N) has a primitive prime t_j
   with ord_{t_j}(q) = r^j o (Zsygmondy, no exception), hence t_j ≡ 1 (mod r^j),
   t_j ∈ S∖{q, r} (t_j ≠ 3; t_j ≠ r since o < r^j o), distinct per level. With
-  W_j = {t ∈ C∖{r,q} : r^j | t − 1} (nested) and the unknowns as wildcards, the maximal
+  W_j = {t ∈ C∖{r,q} : r^j | t − 1} (nested) [corrected in Block 8: this is the 9/5
+  form; for a target num/den, t_j ∈ (S ∪ primes(num))∖{q, r} and W_j runs over
+  (C ∪ primes(num))∖{r, q}, which is what the code does; with W over C only the bound is
+  false for some targets — §8.1, results/ERRATA.md E6] and the unknowns as wildcards, the maximal
   level is the largest v with |W_j| + #wildcards ≥ v − j + 1 for every j ≤ v (Hall for
   nested sets). It is the universal bound of Block 3 generalised: r = 5 is the case
   without a Wieferich term (ord₅ ∈ {1, 2, 4}).
@@ -1238,7 +1246,9 @@ refuted; 2 refutations confirmed twice, neither about soundness (defects 4 and 6
 
 **Review of the fixes.** Tightening 7, the exact root of defect 3, and one further
 change (in the composite case of the large-prime lemma the divisors of ℓ·e are now
-taken from those of e, as div(e) ∪ ℓ·div(e), without factoring) were made after the
+taken from those of e, as div(e) ∪ ℓ·div(e), without factoring [corrected in Block 8:
+the divisors are built without factoring ℓ·e, but `_e_ordem` then factors ℓ·e, with no
+size gate, whenever p^{ℓe} ≡ 1 (mod r); a possible stall, never a wrong answer, §8.8]) were made after the
 pass, so they went to two further reviewers on a frozen copy. None of their ten
 claims was refuted.
 
@@ -1276,14 +1286,19 @@ claims was refuted.
   generic stand-in partition.
 - In the Cor. 6 bound, mutants with one wildcard fewer are *not* detected by any
   planted test (the unknown term always carries slack); the wildcard counts rest on
-  the proof alone.
+  the proof alone. [Corrected in Block 8, §8.3: one wildcard fewer for the unknowns is
+  still a valid bound, not a defect; one wildcard fewer for a known feeder is detected
+  at statement level by planted friends whose bound is attained.]
 - Paths that no real run with k ≤ 8 exercises: the (0, 0) mode of the solver, tails
   with `maximos`, Cor. 6 with hi set. The first and the third occur at k = 9 (344
   solver calls and 367 Cor. 6 firings of these kinds, counted by the replay audit of
   §7.6); the second only in part: 2 936 tail calls of k = 9 carry a non-empty
   `maximos`, but none of them branches on a prime that has an upper bound. Paths that
   no real run with k ≤ 9 exercises, so that only unit, planted and differential tests
-  cover them: the large-prime lemma for the other primes of a set (the 201 sets with
+  cover them [corrected in Block 8: this list is not exhaustive, and for several of
+  these paths no planted friend reached them — prime-power cofactors, a common factor
+  in the coprime-base refinement, the guards of the total-closure lemma, the large-prime
+  lemma for a friend's own set; coverage since Block 8 in §8.2]: the large-prime lemma for the other primes of a set (the 201 sets with
   a large prime at k = 9 die one step earlier, the large prime itself having no
   admissible exponent), the exact signature test of a complete set (no complete set
   of k = 9 survives the exponent lists), the total-closure lemma, prime-power
@@ -1475,7 +1490,7 @@ What it leaves open:
   sigma_pp and sup_pp they import from core/motor.py (Block 1 engine, adversarial
   pass §1.5) + correctness of
   sympy.n_order/factorint/isprime/nextprime/primerange/integer_nthroot/cyclotomic_poly/divisors/totient
-  in the calls consumed]`. **Not new**: it is Thackeray's theorem (arXiv:2310.15900),
+  in the calls consumed]` [superseded in Block 8 by the label of §8.9]. **Not new**: it is Thackeray's theorem (arXiv:2310.15900),
   reproduced by a different method (partition by valuation budgets, closures through
   cyclotomic pieces, tails, split at B_min, last unknown by exact roots; the finite
   exponent bound it also uses comes from Thackeray's own Cor. 6 and Prop. 9,
@@ -1483,7 +1498,8 @@ What it leaves open:
   load-bearing**: Theorems E and E′ and Result G keep citing the published result.
 - Result I (ω(N) ≥ 9) is the k ≤ 8 part of the same run and carries the same label.
 - What a result *beyond* the literature (k = 10, i.e. ω(N) ≥ 11) would need first.
-  **Candidate Block 8**, in this order:
+  **Candidate Block 8**, in this order [carried out in Block 8: steps 1–4 delivered except the run on different hardware of step 3 (§8.6),
+  step 5 stops at three unknowns, §8.8]:
   1. a target-generic partition (budgets v_r for the primes of the target), so that
      planted friends can be driven through the whole machine end to end;
   2. the primality certificates and an exact verifier inside the repository, with
@@ -1500,3 +1516,497 @@ What it leaves open:
      available: a memo of states, the missed prune of §7.6, a faster exact
      prime-power test, a better `LIMIAR_INDICE`, the project's own exact root in the
      last-unknown solver in place of the library call.
+
+---
+
+## Block 8 — A certifier generic in the target, planted friends end to end, primality proved; ω = 10 stops at three unknowns
+
+Approved objective (§7.7): the five steps listed there, in that order. Steps 1 to 4 are
+delivered, except the run on different hardware of step 3 (§8.6). Step 5, the run for k = 10, was attempted and stops at a structural
+obstruction identified in §8.8; **no statement about ω(N) beyond the literature is made**.
+Result J (ω(N) ≥ 10) keeps its status — not new, not load-bearing — with fewer assumptions
+on sympy (§8.9). One by-product is new: a defect in the statement of Corollary 6
+of arXiv:2310.15900, which does not affect that paper's theorem (§8.7).
+
+The adversarial passes of §2.5 and §7.4 and the replay audit of §7.6 reviewed the code up
+to Block 7. The code of this block (generic target, orders from a recorded factorisation of
+q − 1, the ledger of primality claims, the verifier of certificates, the span guard of
+§8.8) was reviewed by the passes of §8.4, §8.5 and §8.9.
+
+### 8.1 The partition made generic in the target
+
+Until Block 7 the budget partition refused every target other than 9/5, so a planted
+friend could only travel through the index fallback, never through closures, budgets,
+solver, tails, finite exponent bound or split. The obstacle was not the guard itself: a
+dozen statements of the partition were true only because 9/5 is a power of 3
+over 5. With the guard removed and nothing else changed, the certifier *certifies* the
+absence of friends for the target I(5²·7²·11²·13²·17²·19²) at k = 6 — a false
+certificate, found by the reviewers who mapped the assumptions.
+
+For a target t = num/den in lowest terms and the same structural hypotheses (N an odd
+square, 5 its least prime, 3 ∤ N), den·σ(N) = num·N gives den | N, hence
+v_p(σ(N)) = v_p(num) + v_p(N) − v_p(den) for every prime p, and every prime of σ(N)
+lies in S ∪ extras, with **extras = primes(num)** (for 9/5: {3}). The generic forms:
+
+| 9/5 form | generic form | why |
+|---|---|---|
+| closures modulo C ∪ {3} | modulo C ∪ extras | a prime of σ(q^a) outside C ∪ extras is a prime of N (an unknown: pin, or dead if ≤ lo); an extra outside C need not divide N |
+| witnesses of orders searched in C | in C ∪ extras | a primitive prime of Φ_d(q) divides σ(N) and is not q; it need not divide N |
+| v₅(σ(N)) = a₁ − 1 | T₅ = a₁ + v₅(num) − v₅(den) | valuation of σ(N) = num·N/den |
+| v₃(σ(N)) = 2 | T₃ = v₃(num) | 3 ∤ N, hence 3 ∤ den |
+| a₁ ≤ 1 + (c₅+s)(c₅+s−1) | max(2, v₅(den) − v₅(num)) ≤ a₁ ≤ (c₅+s)(c₅+s−1+e₅) + v₅(den) − v₅(num) | T₅ ≥ 0; each of the at most c₅+s feeders has its levels witnessed by distinct primes ≡ 1 (mod 5) of (S ∪ extras) minus itself; e₅ = extras outside C that are ≡ 1 (mod 5) |
+| last unknown: e_q ≤ a_q | e_q ≤ a_q + v_q(num) − v_q(den) for q ∈ C fixed; e_e ≤ v_e(num) for an extra e ∉ C | Φ_ℓ(U) \| σ(N); with s = 1 an extra outside C that divides Φ_ℓ(U) is not a prime of N |
+| total-closure lemma: x must be an integer | every prime of den(x) is an unknown, lies in primes(num) ∪ primes(den), and there are at most s of them | σ(A)/A = x for A = ∏_U U^{a_U}, so den(x) \| A |
+| L₁ = 1 + 2s/(R−1) | L₁ = 1 + s·max(R, 2)/(R−1) | U₁ < 1 + sR/(R−1); the two agree for R < 2 |
+
+**Every pool of witnesses is C ∪ extras**: the levels of the budgets, the injective
+feasibility test, the right-hand side and the caps of the last-unknown equation, L(C),
+the range of a₁ (`_faixa_a1`) and the levels of the finite exponent bound
+(`_cota_expoente_conhecido`). The reason is one line: a primitive prime t of Φ_{r^j}(q)
+is ≡ 1 (mod r^j) and divides σ(N) = num·N/den, so t | N or t | num. With witnesses in C
+only, the finite exponent bound is false for some targets (§8.7); the count of Thackeray's
+proof then reads b ≤ k − 2 + e, with e the primes ≡ 1 (mod r) of num outside N
+(results/ERRATA.md E6). The 9/5 form stated in §6.1 is corrected in place.
+
+Fact 2 needs no change: with even exponents only bases q ≡ 1 (mod ℓ) feed ℓ ∈ {3, 5},
+because ℓ − 1 has no odd divisor > 1. No budget is taken on the other primes of num;
+none is needed for soundness. Targets that no N with the hypotheses can have (t ≤ 1, num
+or den even, 3 | den), targets with a prime e of num whose e − 1 has more than `ORDEM_BITS` bits,
+and targets whose num or den resists a bounded factoring effort are refused
+(`NaoCertificavel`), at the root and by the partition. The statements are in the header
+of `core/omega_k.py` ("BLOCK 8") and in the docstrings of `_alvo_de`, `_orcamento5`,
+`_orcamento3`, `_faixa_a1`, `_fecho_total_mata`, `_L1`.
+
+How it was done: three independent readers mapped the assumptions (one through
+`core/omega_k.py`, one through the support modules, one from the mathematics first), a
+fourth searched for planted friends, and one consolidated specification of 14 changes,
+each with a proof and the reason why the 9/5 computation is unchanged, was implemented.
+
+**9/5 is unchanged.** The counters of k = 6, …, 9 are those of §7.5 (§8.9). More than that: old
+and generic code were run side by side on the complete trees, comparing at every node the
+state at entry, the result of the partition (or the text of its refusal), the exponent
+lists and the counters: identical for k ≤ 8, and for k = 9 on all 2 298 715 nodes
+(1 338 903 partition calls, the same 10 074 refusals). That comparison was made before
+the later changes of this block; those changed comments, refusal guards and the source of
+the orders (§8.5), and the code of this commit reproduces every counter of §7.5 (§8.9).
+
+### 8.2 Planted friends through the whole machine
+
+A planted friend is any N₀ = 5^{a₁}·∏ q^{a_q} with even exponents, 5 its least prime
+and 3 ∤ N₀. Its target is t = I(N₀); the primes of σ(N₀) outside N₀ simply become
+extras. With `core.omega6.ALVO` = t, `certifica_omega(ω(N₀))` must list N₀. Since the
+certifier is a cover and not a disjoint split, a friend may be reached along several
+paths: the tests compare sets of signatures, never counts.
+
+**The path check.** "Found" alone cannot see a node that drops the friend while another
+path of the cover still reaches it. The end-to-end runs of the 76 friends of `tests/test_planted.py`
+therefore watch every node (`_run_checked`): a node that contains N₀ (C ⊆ S, s = |S∖C|,
+every unknown > lo, fixed exponents equal, minimos ≤ a_p ≤ maximos, U₁ ≤ hi when hi is
+set) must have a child that contains N₀ (s ≥ 1) or report N₀ (s = 0); otherwise it is a
+false kill, even when N₀ is found elsewhere. Negative control: a leaf kill planted on the
+path of P23 is flagged while P23 is still found. `experiments/planted_sweep.py` applies
+the same check and reports such a run as MASKED.
+
+- `tests/test_planted.py`: **76 planted friends** (k = 2, …, 8; 74 in the default tier,
+  P06 and P08 with `SOLITARY_SLOW=1`), every one found with no dropped node. Statement
+  level, for each: the generic budgets are the valuations of σ(N₀); the range of a₁
+  contains a₁(N₀) at every consistent node (every C with 5 ∈ C ⊆ S); the total-closure
+  lemma does not fire at any node where its precondition holds; with every other
+  exponent bounded above by its true value, the finite exponent bound on each a_r stays
+  ≥ a_r (for the 61 friends with at most six primes, all below 10⁶).
+- Origins: P01–P28 from a search for N₀ whose numerator has few primes (it found none
+  with zero or one prime of num outside S ∪ {3} for k ≤ 8 and primes up to 20 000, 889
+  with two (primes up to 1 000) and 20 518 with three (k ≤ 6, primes up to 150): targets as "closed" as 9/5 are rare, which is the
+  planted-test face of the open problem); X01–X21 built by the readers of §8.1 to hit one
+  generic statement each; R01–R19 constructed by the adversarial round of §8.4 for the
+  regions of §8.3; R20–R27 added by the whole-code pass (§8.9): the solver in mode (0, 0)
+  with ε = 1 for ℓ ∈ C (R20, R21), the last unknown with every cap attained (R22, R23), a
+  prime r with r − 1 of 81 bits in a complete set (R24), the index fallback with one
+  unknown (R25, R26, refused before this block, §8.8), and the v₃ cuts of the signature
+  test of a complete set (R27).
+- **What acts on a friend along its own path** (measured with `_run_checked`; a step
+  that fires elsewhere in the tree of a run shows that the step runs, not that it is
+  sound): split (a) on R02, R06–R08, R11, R16, R18, R19; split (b) followed by the finite
+  exponent bound at s = 2 on R01, R03, R04, R15, P13 and P23; split (a2) on R05, R06,
+  R17, R18, R25, R26; a tail on R09, R10, R19; the last-unknown solver on X16 (it pins 149, a prime
+  of den) and on most others. P06, P08, P10 and X05 fire splits and the bound only off
+  their friends' paths. `test_planted_runs_exercise_every_step_of_the_partition` asserts
+  the path events of the three split cases, a tail, the bound and the solver.
+- **Node-level tests** start `_certifica` at a chosen state, for the equalities and
+  attained bounds that no run from the root reaches (the review found none on the paths
+  of the planted friends): U₁ = hi with prod_min·v(hi) = t at s = 1
+  (5²·31²·67², mutant `hi_eq_kill`); upper bounds attained, `maximos` equal to the true
+  exponents, including the live s = 0 equality prod_sup = t (`max_strict_lists`,
+  `s0_sup_eq`); a lower bound attained, prod_min = t (`min_strict_lists`, also killed end
+  to end by R09, R10, R19); a level witnessed only by primes of num, at C = {5, 11, 13,
+  17, 19}, s = 1 (X14; `witcap`, `witfecha`); the closure branches that no real run
+  reaches, under forced gates: a prime-power cofactor, a skipped cyclotomic piece, two
+  residues with a common factor refined into pins, an unfactored residue that must stop
+  the total-closure lemma (`closure_no_extra_guard`, `closure_no_piece_guard`, `pp_none`,
+  `composite_3`, `no_coprime_base`, `coprime_base_3`); case (B1) of the large-prime lemma
+  at 5²·q⁴·r² with q = 1058147 and r = Φ₅(q), the only source of a_q + 1 = 5
+  (`lemma_A_r_den`, `bigprime_Ar_minus1`); the finite exponent bound where it branches on
+  the friend (three states, including the level cap from an upper bound of a free feeder,
+  the second iteration of the Wieferich loop, w₇(1733) = 3, and a free prime above
+  `R_CHEAP_PROP9`), and its kill A_r < min_r at the boundary.
+- **Large primes.** At k ≤ 9 the large-prime lemma beyond the large prime's own list
+  carries no weight: the 201 sets of k = 9 with a large prime die because the large prime
+  has no admissible exponent. It is exercised end to end by R24 = 5²·r² (r − 1 of 81 bits;
+  `lemma_dead`, `lemma_D_3`, `lemma_fecha_3`), at node level by case (B1) above, and by
+  brute force with generic extras (`ordens_impares`, `sigma_fecha_em`,
+  `expoentes_validos_ordens`). Cases (B2) and composite (B1) have not been met with a
+  genuine large prime.
+- **Composite orders.** The values Φ_d(q) of `sympy.cyclotomic_poly` for d with two or more distinct primes are
+  compared with an integer Möbius product for the 76 such odd orders with φ(d) ≤ 200, and the
+  planted friends 5¹⁴·7², 5³²·7², 5⁴⁴·7² guard them end to end (`phi_composite`).
+- `experiments/planted_sweep.py`: a deterministic grid, **9 145 planted friends**
+  (k = 2, …, 6), with the path check: FOUND 9 145 (k = 2: 2 475, k = 3: 2 772, k = 4: 3 520, k = 5: 252, k = 6: 126), none LOST, BADFRIEND or MASKED, 96 s; the steps that fired somewhere in the trees of these runs: the partition in all, pins in 8 761, the solver in 8 356, tails in 1 297, splits in 136, the finite exponent bound in 115.
+- The adversarial round of §8.4 ran about 4 400 further planted friends of its own
+  design; none was lost.
+
+### 8.3 What planted friends can and cannot detect
+
+`experiments/planted_mutations.py` applies small deliberate defects to a copy of
+`core/omega_k.py` (68 mutants) or of `core/primality.py` (7) and runs the planted tests,
+or the tests of the verifier, on the mutated copy. A mutant is *killed* only when a test
+fails on an assertion of the tests or on an expected exception that was not raised; a
+time-out, a crash, another exception, or an `AssertionError` raised inside `core/` is
+INCONCLUSIVE and fails the run. One test compares frozen node counts of the 9/5 tree at k = 8 and
+detects any change, harmful or not; `--no-frozen` deselects it. The remaining tests
+still include a few exact values (among them the lower end of the range of a₁, the 9/5 parameters,
+the finite exponent bound at s = 0 and at one node with s = 2), so a kill without the
+frozen counts is a lost friend, a dropped node, a violated statement, a missing path event or refusal, or a changed exact
+value. Final runs on the code of this commit:
+
+- default mode: **75 mutants, 74 killed, 1 survived (`ver_disc`, expected), 0 inconclusive, controls passed, exit status 0 (12.5 min)**;
+- `--no-frozen`: **75 mutants (68 of the certifier, 7 of the verifier), 74 killed, 1 survived (`ver_disc`, expected), 0 inconclusive, controls passed, exit status 0 (10.5 min)**.
+
+The only survivor in both is `ver_disc` (§8.5). `KNOWN_BLIND` is empty.
+
+*Friends with small primes do not reach the regions that matter at k = 9.* With the
+first 49 friends and the whole grid, six mutants of the older code survived: a dropped
+case (a2) or (b) of the split, a tail that skips exponents, a virtual factor slightly
+too large, and the two wildcard counts of the finite exponent bound. A friend sits in
+case (b) of a split only if its smallest unknown U₁ lies in (B, 2B + 1] (at s = 2); none of the
+grid has that. The adversarial round then *constructed* such friends: for instance
+N₀ = 5²·7⁴·2003²·2027² splits at C = {5, 7} with B = 1071 < U₁ and goes through the
+finite exponent bound at s = 2; N₀ = 5²·701²·344472103² has U₁ = B exactly;
+N₀ = 5²·31⁴·5351²·153216258673² carries hi with prod_min·v(hi) within 2.4·10⁻⁴/hi² of the
+target. With these friends (R01–R19) the four mutants of the split, the tail and the
+virtual factor are killed end to end.
+
+*The finite exponent bound is tested statement by statement, not end to end.* Notation
+of §6.1: W_j = #{t ∈ (C ∪ extras)∖{r} : r^j | t − 1}, non-increasing in j; nm(W, c) is
+the largest v with W_j + c ≥ v − j + 1 for all 1 ≤ j ≤ v (`_nivel_max`, the nested Hall
+condition with c wildcards); om = `_nivel_wieferich_max(r, L)` ≥ 1 bounds the Wieferich
+level of a prime ≤ L. The bound is A_r = v_r(den) − v_r(num) + (terms of the known
+feeders) + s·(om + nm(W, s − 1)).
+
+- (F1) nm(W, c + 1) ≤ nm(W, c) + 1: if v is feasible with c + 1 wildcards, v − 1 is
+  feasible with c.
+- (P1) *s − 2 wildcards suffice for the unknowns.* Let U ≤ L be an unknown. (i) If
+  U ≡ 1 (mod r), its contribution is v = v_r(a_U + 1) ≤ nm(W, s − 1) ≤ nm(W, s − 2) + 1
+  ≤ nm(W, s − 2) + om, the Wieferich term being unused. (ii) If o = ord_r(U) is odd,
+  > 1 and divides a_U + 1, the contribution is w_r(U) + v with w_r(U) ≤ om (Prop. 9); for
+  each j ≤ v both Φ_{r^j}(U) and Φ_{r^j·o}(U) divide σ(U^{a_U}), and their primitive
+  primes (Zsygmondy), modulo which U has order r^j and r^j·o: both ≡ 1 (mod r^j), distinct
+  from each other, from U, from r and from the witnesses of the other levels, and in
+  S ∪ extras. The nested Hall condition then gives 2(v − j + 1) ≤ W_j + s − 1 for every
+  j ≤ v, which forces W_j + s ≥ 3 and v − j + 1 ≤ W_j + s − 2, i.e. v ≤ nm(W, s − 2).
+  (iii) Otherwise the contribution is 0. Hence the mutant `cor6_wild_unknown` (one
+  wildcard fewer for the unknowns) is a valid, sharper bound, not a defect.
+- (P2) *Slack.* At s = 2 every friend has a_r ≤ A_r − 2: the term of each unknown
+  exceeds its contribution by at least 1 (by om ≥ 1 in cases (i) and (iii); in case
+  (ii) two witnesses per level with one wildcard give nm(W, 1) ≥ v + 1), and every other
+  term is an upper bound. At s = 1 and s = 0 the slack can be 0, and planted friends
+  attain the bound there.
+- (P3) *Where the certifier uses it.* On a node that holds a friend the bound branches
+  only at s = 2: at s = 1 `_ramos_cor6` requires lo ≥ B_min, while a friend's unknown
+  satisfies B_min ≥ U > lo; at s = 0 and s ≥ 3 there is no bound L. Census of the 9/5
+  runs: all 44 407 firings of k = 9 (44 403 branchings, 4 kills) have s = 2, and there is no call with s = 1 at
+  k = 6, …, 9.
+
+Consequences. No planted friend can expose an error of up to 2 in the bound end to end.
+`cor6_drop_top` (the value A_r itself not branched) is harmless as the code stands: by
+(P2) and (P3) A_r never holds a friend. Both mutants stay in `EXPECTED_SURVIVORS`, with
+these proofs, although both are now killed — only by pinned values, the frozen counts and the value A = 10 at one
+node with s = 2 (`test_finite_exponent_bound_kills_exactly_below_the_bound`), which a
+sharper valid bound also fails. `cor6_pool_C` (witnesses in C only: Corollary 6 as
+printed, §8.7) and `cor6_wild_known` (one wildcard fewer for a known feeder; at s = 0 it
+asks two witnesses for one level) are killed only at statement level, by the four
+friends whose bound is attained at s = 0 because a prime of num witnesses a level
+(`test_exponent_bound_counts_the_primes_of_num_as_witnesses`; `cor6_wild_known` only by two of them, 5²·7²·29⁶ and 5²·11²·23¹⁰, `cor6_pool_C` also by A = 10 above); end to end they lose no
+planted friend. By (F1) `cor6_wild_known` lowers the term of each free known feeder
+q ≡ 1 (mod r) by at most 1, so end to end it could lose a friend only at a node with
+s = 2 and at least three such feeders; whether one exists is open. The level cap from an
+upper bound (`_cap_nivel`) is checked exhaustively for r ∈ {5, 7, 11, 13, 29, 31} and
+M < 3000 (`cap_nivel_off` and a cap stuck at level 1 are killed). §7.4, which grouped both
+wildcard mutants as undetected and resting on the proof alone, is corrected in place.
+
+### 8.4 Adversarial round on the generic partition
+
+Six reviewers: three constructors (split (b); split (a2) and the virtual factor; tails
+and the finite exponent bound), two breakers (random generators of their own; the
+generic statements one by one), and one checking the 9/5 equivalence. Every claimed
+defect went to two further readers.
+
+- **No planted friend was lost** and no wrong friend was reported: 1 000 random friends
+  (primes below 10¹³, exponents up to 24, k up to 7, 5 | num, feeders at level 2; 774 found, 19 refused, 207 stopped at node or time caps), 74
+  aimed at exact windows of the split and of hi, about 3 300 checked node by node
+  against an oracle of the generic statements, and 56 constructed for specific regions.
+- Three statements were wrong, none in a kill: the justification in the docstring of
+  the total-closure lemma (an identity false for primes of num; the conclusion was
+  right), the 9/5 value quoted for the range of a₁ (off by one in the text), and the
+  status of the mutant `cor6_wild_unknown` (§8.3). Corrected.
+- The factorisation of num and den of the target had no bound: a target with two large
+  primes stalled at the root (no answer after 8 minutes; hours by the measured cost of ECM) instead of being refused. It is now split by
+  Pollard rho with a fixed number of steps and refused if that fails.
+- A limit of coverage, not of soundness: with (k₅, k₃) = (0, 0) the last-unknown solver
+  ranges over the primes ℓ of L(C ∪ extras) and declines as a whole when one ℓ is too
+  large. For 9/5 the extras add nothing. For planted targets with a large last prime,
+  the extras bring large ℓ, the solver declines, and the index interval is then too
+  long: such friends are refused (19 of the 1 000 random ones), so that part of the
+  solver is only partly testable by planted friends.
+
+### 8.5 Primality claims proved
+
+The label of Result J carried "BPSW primality above 2⁶⁴". It now names BPSW only for a run that `experiments/certify_primes.py` has not checked.
+
+- `core/primality.py` (exact integers, no sympy): a proof of primality below
+  ψ₁₃ = 3 317 044 064 679 887 385 961 981 by trial division and the 13 Miller–Rabin
+  bases 2, …, 41 (Sorenson–Webster), and above it the verification of elliptic-curve
+  certificates (Goldwasser–Kilian / Atkin–Morain chains ending below ψ₁₃). Each step
+  checks gcd(N, 6) = 1, a nonsingular curve, the point on it, q above (N^{1/4} + 1)²,
+  [m/q]P ≠ O and [q]Q = O, with a non-invertible denominator or two inconsistent points
+  taken as a proof of compositeness; the chain is read once, from plain dicts of plain
+  ints.
+- Each check the step theorem needs is pinned by a forged step for a composite N that
+  fails that check alone (`test_each_check_of_the_step_theorem_is_needed`, `test_a_denominator_that_is_not_invertible_shows_a_composite`), or by a unit
+  check: the mutants `ver_final_O`, `ver_Q_infinity`, `ver_size_bound`, `ver_size_weak`,
+  `ver_den_gcd` and `ver_inconsistent` are killed (no forgery is known that needs the
+  inconsistent-points check; only the unit check kills that mutant). `ver_disc` survives
+  as expected: on a singular curve the nonsingular points form a group of order p − 1,
+  p or p + 1, below the size bound, so the discriminant check is hygiene. The check
+  gcd(N, 6) = 1 has no mutant: if 2 | N, doubling an affine point raises or gives O, so
+  for odd q the computed [q]Q is never O; if 3 | N the curve is nonsingular over F₃ and
+  #E(F₃) ≤ 7 < 9 ≤ q.
+- A **ledger**: every integer ≥ 2⁶⁴ that the certifier relies on being prime on the word
+  of sympy is recorded — a True answer of `isprime`, the prime factors returned by
+  `factorint`, the factors of q − 1 behind every order, and every output of `nextprime`.
+  Orders are computed in `core/cadeias.py` from that recorded factorisation
+  (`fatoracao_q_menos_1`, `ordem_mod`) instead of `sympy.n_order`; the small primes
+  stripped from cyclotomic values are checked against our own sieve. Recording changes
+  no decision.
+- What the ledger cannot record, and is therefore a hypothesis of the label: the answers
+  *composite* of `isprime` above 2⁶⁴ at the sites that are not re-proved — the root r of
+  c = r^e in `_prime_power_base`, a candidate U of the last-unknown solver, B in case
+  (a2) of the split, an order ℓ in case (B1) of the large-prime lemma — and the integers
+  `nextprime` steps over, which it skips only on such an answer (sympy 1.13.1, which ran the final runs, and 1.14.0: trial
+  division, a sieve and factor-cache lookup, an Euler test with an exclusion list of
+  composites only, deterministic Miller–Rabin below ψ₁₃, strong BPSW above; every prime
+  passes every one of them). The final cofactor verdicts of `_classifica_cofator` are
+  re-proved: a composite needs a Miller–Rabin witness among the first 40 primes or an
+  exact prime-power decomposition, and otherwise the node is refused, never killed
+  (composites without such a witness exist; Arnault 1995). In the 9/5 runs with k ≤ 8,
+  all 44 answers *composite* on n ≥ 2⁶⁴ are such cofactor verdicts (k = 9 not measured).
+  The primes `sympy.divisors` finds inside `_divisores_impares_maiores_que_1` are not
+  recorded: a missing divisor can only add candidates, which `sigma_fecha_em` decides
+  exactly.
+- `experiments/certify_primes.py` runs k = 1, …, 9 with the ledger on and proves every
+  recorded claim. On the code of this commit: **3 890 claims ≥ 2⁶⁴ at k ≤ 9 (10 at k ≤ 8), 1 191 below ψ₁₃ proved by trial division and the 13 bases, 2 699 above (the largest of 1 797 bits) proved by their certificates, verified in 97 s; "ALL PRIMALITY CLAIMS >= 2^64 PROVED", exit status 0, 15 min. The count 3 890 is now the script's reference for k = 9, so a lost or added recording site fails the run**. The certificates are in
+  `data/primality_certificates.json.gz` (decimal strings; CPython converts at most
+  4 300 digits by default, so a claim above that would need a format change — a loud
+  error, never a false certificate; the largest claim has 1 797 bits, 541 digits). That
+  file was written by `core.primality.save_store` from a driver outside the repository;
+  its key set equals the claims ≥ ψ₁₃ recorded at k ≤ 9, and
+  `experiments/ecpp_generator.py` reproduces the sampled chains byte for byte. How the
+  certificates were found is irrelevant (the generator uses floating point and is not
+  trusted); only the exact verifier decides. `--generate` now writes the store
+  atomically, at checkpoints and on exit, with a self-describing meta field.
+
+An independent audit of this part found the verifier sound (all 2 699 certificates are
+also accepted by a second verifier written from the theorem) and three defects, all fixed
+before this commit: the claims made inside `n_order` escaped the first version of the
+ledger (one of 67 bits at k = 9, below ψ₁₃); the small primes were taken from
+`factorint` on trust; and the chain verifier read a field twice, so that an object
+imitating a dictionary could show a composite to one check and a prime to the other
+(stored certificates were never affected).
+
+### 8.6 The open items of §7.6, and corrections to earlier sections
+
+| Open item | What was done | Result |
+|---|---|---|
+| The composition was only compared on counters | planted friends driven end to end through the generic partition, every node of their paths checked (§8.2); old and generic code side by side on the complete k = 9 tree (§8.1) | 76 + 9 145 planted friends found, none dropped on its path; identical on all 2 298 715 nodes |
+| Only k = 9 was replayed | the six family audits replayed on k = 1, …, 8 (18 921 nodes, 6 185 partitions), every decision re-derived | 0 mismatches; every planted defect flagged (one control, inert at k = 7 and 8, was replaced by a stronger one) |
+| The finite exponent bound was compared with pairs of unknowns on 128 firings | every firing with L ≤ 2²² (21 860 of 44 407; 95 645 of the 189 693 bounds): the explicit bound maximised over **all** admissible prime pairs, about 1.04·10¹² pairs through a reduction to profiles that was itself checked on 3 million literal evaluations | never above A_r; least slack 2 (4 bounds), 3 in 121 more; the two necessary conditions hold on all 44 407 firings |
+| Four steps rested on a second derivation of the same lemma | budgets and witness levels, injective feasibility, range of a₁ and finite exponent bound derived again for a general target from the definitions, the paper and its reading note alone, *written down before the code was opened*, then compared | the code equals the derivation term for term or is looser (L₁ by a factor of about 2), and is nowhere stronger; 1 415 planted friends (11 320 nodes) satisfy every statement |
+| Primality rested on BPSW | §8.5 | every claim proved |
+| A run on other hardware | not done | still open |
+
+The derivation from the paper also recorded where the code is *stronger than the paper*
+and why that is justified: a₁ ≤ (k−1)(k−2) + 1 against (k−1)² + 1 (the witnesses differ
+from the feeder itself: 57 against 65 at the k = 9 root, i.e. a₁ ≤ 56 against 64); levels counted per feeder by a
+nested Hall condition instead of a pigeonhole; the exact Wieferich maximum for every
+r ≤ 10⁶ instead of a table for two primes. In the other direction, it counts the primes of num as witnesses,
+which the corollary as printed does not do (§8.7). The second readings of the findings
+of these audits (§8.5 included) were interrupted before all of them finished; six were recorded (five
+confirmations, and one disagreement about the severity of the dictionary issue, which was
+fixed anyway).
+
+Corrections to earlier sections, each marked in place: §4.3 (the k = 7 comparison of the
+large-prime route compared nothing: on all 13 sets the large prime has no admissible
+exponent, so the lemma was never called; in general its lists are a subset of the direct
+ones, because it also uses v_r(σ(N)) ≤ A_r — e.g. N₀ = 5⁶·31⁴ with 31 forced large: the
+direct list of 5 is [2, 6], the lemma's [6], and N₀ is still found; the test now compares
+498 lists on the 40 complete sets of k = 7, for every prime r whose own list is non-empty); §5.4 (a
+misquote); §6.1 (the 9/5 form of the levels); §7.4 (the divisors of ℓ·e are built
+without factoring, but `_e_ordem` then factors ℓ·e; the two wildcard mutants; the list
+of paths that "only unit, planted and differential tests cover", which was neither
+exhaustive nor true for "planted").
+
+### 8.7 A defect in Corollary 6 of arXiv:2310.15900
+
+Corollary 6 of Thackeray's paper bounds v_r(n) for an odd square n under the hypothesis
+that "each prime factor q of n such that q > r satisfies v_q(σ₋₁(n)) = 0". Its proof
+applies that hypothesis to primes q_{r^i} which divide σ(n) and need not divide n. As
+printed the statement is false: for n = 11²·5⁶⁰⁴ and r = 11 the hypotheses hold (no
+prime factor of n exceeds 11), the bound is 1, and v₁₁(n) = 2. The hypothesis has to be
+imposed on every prime q > r. For friends of 10 it then holds, because the numerator of
+9/5 has no prime above 5: Corollary 7 and the theorem ω(n) ≥ 10 are not affected.
+
+The certifier never used the printed form: its bound counts the primes of num as
+witnesses, which is what the repaired statement requires. As a formula the printed count
+undercounts: for 5²·7²·29⁶, 5²·11²·23¹⁰, 5²·7²·43⁶ and 5²·13²·53¹², at the node where
+every prime is known, the bound is attained (= 2) only because a prime of num witnesses a
+level, and with witnesses among the primes of n it would be 1. End to end these four are
+still found: the bound never fires on their runs; no
+end-to-end loss of a planted friend through the printed count of this bound is known.
+The same count at r = 5, in the range of a₁, does lose five planted friends without
+those witnesses (mutant `a1max_no_e5`). Catalogue entry, verbatim text, second
+counterexample, generalised bound and literature search: `results/ERRATA.md`, E6
+`[PROVED]`; certificate `python experiments/verifica_erratas.py --bloco e7`.
+
+### 8.8 ω = 10: where it stops
+
+`certifica_omega(10)` refuses after 10 804 nodes:
+
+```
+C=[5, 7, 11, 13, 31, 97, 52361], s=3, fixos={5: 2}, hi=None: index enumeration over (102507528, 615045164] exceeds MAX_INDEX_SPAN = 200000000
+```
+
+It is the near-tight node of Blocks 5 to 7 with one more unknown. The split at
+B = 102 507 528 still works on its side (a). On side (b), U₁ > B, the finite exponent
+bound needs a bound L on *all* the unknowns, and with three unknowns there is none: for
+U₁ just above B the remainder R′ is just above 1 and U₂, U₃ are unbounded. What is left
+is to enumerate U₁ over (B, L₁], about 26 million primes, each with its own s = 2
+subtree.
+
+A survey run, which records each refusal and goes on (it is not a certificate of
+anything; run on the code of 10 November, before the pass, by the unversioned predecessor of `python experiments/survey_omega_k.py --k 10 --seconds 14400`, whose first 15 000 nodes on the code of this commit give the same six refusals), measured the
+size of the problem: in 4 hours it visited 47.5 million nodes, met 6 such refusals
+(seventh prime 52361, 52363, 52369, 52379, 52387, 52391, all with s = 3 and a₁ = 2),
+and was still inside a₁ = 2, enumerating the smallest unknown of the next node of the
+same family, {5, 7, 11, 13, 31, 97, 52433}, whose interval, 1.39·10⁸ wide, is under the limit:
+about 130 primes per second, 52 nodes each. At that rate the single interval of the
+refusal above is about 55 hours, and the family continues.
+
+So k = 10 is out of practical reach of the present method. The method of
+Blocks 5 to 7 closes near-tight nodes with at most two unknowns; ω = 10 needs it for
+three. This is where Thackeray's paper also stops, with v₅(n) = 2 among its bottleneck cases
+(§5 there). What would have to be new is one of: a finite exponent bound that works
+when only the two largest unknowns are bounded in terms of the smallest; a version of
+the cyclotomic equation of Block 5 for the last *two* unknowns (σ(U₃^a) is composed of
+primes of C ∪ extras, U₁ and U₂, all smaller than U₃); or a way to make the tails work on
+side (b). None of these is attempted here. Recorded in FAILURES.md.
+
+One refusal guard was measured with the wrong bound and is fixed: with one unknown the
+index fallback measured its interval with L₁ ≈ 2·B_min, while the loop breaks at the
+first q with prod_sup·q/(q − 1) ≤ t, i.e. q ≥ 1 + 1/δ (δ = t/prod_sup − 1), so every
+prime it visits is ≤ B_min. Two planted friends refused by the old guard (R25, R26) are
+now found in 11 and 10 nodes; in a family of 91 planted friends built for it, the change
+clears 12 of 33 refusals, and the other 21 are genuine wide windows. It changes no
+certificate.
+
+Known limits and deferred work, none of them a soundness issue (a decline or a refusal
+is never a kill):
+
+- A planted friend with one unknown of 81 bits and both budgets zero
+  (5²·q⁴·r², q = 1050367, r = Φ₅(q)) is refused, not found: the solver's size gate
+  declines, the finite exponent bound is not offered at s = 1, and the index window is
+  about 10²⁴ (FAILURES.md; pinned by a test). A node of this kind at k = 10 would refuse
+  the whole certificate. Offering the bound at s = 1 is the candidate fix; it changes the
+  strategy at many nodes and must first be measured on the k = 9 tree.
+- The last-unknown solver has no budget on the number of exponent vectors it visits (only
+  on the size of Φ_ℓ(U_max)): at k = 9 at most 4 733 vectors per call, 52 s in all, but a
+  k = 10 state with eight primes in C₅ could need about 2.4·10⁷. A budget whose excess
+  declines the whole solver is needed before k = 10.
+- `_e_ordem` factors ℓ·e without a size gate in case (B1) of the large-prime lemma (up to
+  about 158 bits; a stall, never a wrong answer; not reached at k ≤ 9 by the 9/5 runs).
+- Steps 4–6 of the partition are recomputed for each open pair of budget cases with the
+  same a₁ (about 0.3 % of the k = 9 run).
+- The solver's integer root still uses `sympy.integer_nthroot` (exact; pinned against the
+  module's own `_iroot` by a test); `_phi_valor` could use an integer Möbius product
+  instead of `sympy.cyclotomic_poly`.
+
+### 8.9 Whole-code pass, results and labels
+
+**The pass.** The complete code of the block, frozen and hashed, was read by seven
+independent readers by area (foundations and primality; closures; budgets and the
+last-unknown solver; exponent bounds; composition of the partition; tests and scripts;
+documents and errata) and by a critic of completeness, who measured which lines no
+shipped test executes. Every finding went to one or two further readers who tried to
+dismiss it. Result: **no false kill and no false certificate**; 64 findings, 62 confirmed
+and 2 dismissed. The 62: 25 gaps in the tests (a check that no test pinned, a vacuous or
+duplicated test, a mutant that survived), 15 wrong statements in comments, docstrings or
+documents, 14 items of hygiene, and 8 refusals or performance issues. Each confirmed
+finding was then checked against the current code by a reader of its area and a second
+reader who re-applied and attacked the proposed patches; the merged result was attacked
+again by four readers by file group. Closed in this commit: every test gap and wrong
+statement, the hygiene items that touch the tests or the scripts, and three of the eight
+refusal or performance items (the span guard of §8.8, the exit status of the command
+line, the checkpoints of `--generate`); deferred, with reasons, in §8.8: the other five.
+After the frozen copy that the pass read, `core/omega_k.py` changed in executable code
+at four places, each the fix of a finding of the pass, rechecked by the readers of its
+area: the span guard, the recording of `nextprime` outputs, the re-proof of composite
+cofactor verdicts (§8.5) and the `light` flag of `certifica_omega`. Every other change in
+`core/` is in comments and docstrings.
+
+`python experiments/elimina_omega_k.py --k-max 9` (k = 6, …, 9), on the code of this
+commit (exit status 0 if every requested k is certified, 1 if a friend is found, 2 if
+the run stops at a k that is not certifiable):
+
+```
+omega = 6: nos=55 mortos_min=0 ramo_i=16 particoes=29 ramos_expoente=0 caudas=0 conjuntos_completos=0 completos_mortos_indice=26 com_primo_grande=0 casos_sem_fecho=3 ultimos_resolvidos=1 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 fecho_total_mortos=0 splits=0 dead_hi=0 folhas=0 amigos=0 tempo=0.7s
+omega = 7: nos=459 mortos_min=0 ramo_i=46 particoes=172 ramos_expoente=0 caudas=0 conjuntos_completos=40 completos_mortos_indice=247 com_primo_grande=0 casos_sem_fecho=28 ultimos_resolvidos=5 candidatos_ultimo=0 cor6_ramos=0 cor6_mortos=0 fecho_total_mortos=0 splits=0 dead_hi=0 folhas=0 amigos=0 tempo=1.6s
+omega = 8: nos=18390 mortos_min=243 ramo_i=357 particoes=5970 ramos_expoente=311 caudas=311 conjuntos_completos=3642 completos_mortos_indice=8327 com_primo_grande=0 casos_sem_fecho=338 ultimos_resolvidos=487 candidatos_ultimo=37 cor6_ramos=17 cor6_mortos=0 fecho_total_mortos=0 splits=20 dead_hi=208 folhas=0 amigos=0 tempo=2.8s
+omega = 9: nos=2298715 mortos_min=18869 ramo_i=10074 particoes=1338903 ramos_expoente=129289 caudas=129289 conjuntos_completos=213615 completos_mortos_indice=585665 com_primo_grande=201 casos_sem_fecho=4128 ultimos_resolvidos=67329 candidatos_ultimo=1304 cor6_ramos=44403 cor6_mortos=4 fecho_total_mortos=0 splits=22653 dead_hi=141663 folhas=0 amigos=0 tempo=590.2s
+CERTIFICADO: todo amigo de 10 tem omega(N) >= 10.
+Label: (as below)
+```
+
+Exit status 0; 10 min of wall-clock time on a shared machine (590 s of them for k = 9).
+
+Tests: **618 collected; in the default tier 603 passed and 15 skipped (13 cases of the total-closure test in which no node of the friend meets the lemma's precondition, and the two slow friends, which pass with `SOLITARY_SLOW=1`)**. The runs of `experiments/planted_sweep.py`,
+`experiments/planted_mutations.py` and `experiments/certify_primes.py --k-max 9` quoted
+above are on the code of this commit, apart from later edits that change no executable line of `core/` or of the tests (a comment of `core/omega_k.py`, the label printed by the command line, which is quoted from a run of the final code, and the k = 9 reference that `certify_primes.py` gained after its run).
+
+- **Result J**, every friend of 10 has ω(N) ≥ 10, unchanged in content. Label, as the
+  command prints it (it supersedes the label of §7.7, which still listed `sympy.n_order`,
+  BPSW above 2⁶⁴ and the absence of end-to-end planted friends):
+  `[PROVED-CONDITIONAL: Theorems A-D and Lemmas/Fact 0 of Phase 0 + Zsygmondy, LTE and the Nielsen/Voight valuation formula (classical) + correctness of core/omega_k.py, core/cadeias.py, core/omega6.py, core/primality.py and of the primitives ALVO, I_pp, sigma_pp and sup_pp of core/motor.py (adversarial passes: results/PHASE_1.md sections 1.5, 2.5, 7.4, 8.4 and 8.9; replay audit 7.6 with its open items closed in 8.6 except a run on other hardware; planted friends driven end to end, 8.2, with the limit stated in 8.3: the finite exponent bound is tested statement by statement, not end to end) + the primality claims of the run above 2^64, proved when experiments/certify_primes.py --k-max K exits 0 for the same K (this script does not check them; without that run they rest on sympy's BPSW), and sympy.isprime below 2^64 and its answers 'composite' above 2^64 at the sites listed in 8.5 + correctness of sympy.factorint/nextprime/primerange/integer_nthroot/cyclotomic_poly/divisors/totient in the calls consumed]`
+  **Not new** (Thackeray, arXiv:2310.15900), **not load-bearing** (Theorems E and E′ and
+  Result G keep citing the published theorem). Result I (k ≤ 8) carries the same label.
+- **New in this block:** nothing about the number 10. The defect of §8.7 is new with
+  respect to the literature (search recorded in ERRATA.md).
+- **Not obtained:** ω(N) ≥ 11. See §8.8 and FAILURES.md.
+- **Candidate Block 9** (needs approval). The obstruction is mathematical, so the next
+  block is a study, not a run: (1) the last *two* unknowns by cyclotomic equations —
+  for the largest unknown U₃, Φ_ℓ(U₃) is a product of primes of C ∪ extras and of powers
+  of U₁, U₂ < U₃, which bounds U₃ polynomially in U₂ once the exponents on C, U₁ and U₂ are bounded;
+  (2) the same for three unknowns on side (b) of the split, where all three are large
+  and σ(U₁^a) must be composed of C, 3, U₂ and U₃; (3) only if one of these gives a
+  finite procedure: implement it behind planted friends from the start, together with
+  the deferred items of §8.8 that a k = 10 run needs (the solver budget, the bound at
+  s = 1), then return to k = 10. An alternative that changes the goal instead of the
+  method is Phase 3 of the plan (the family 2p), where the generic target is also the
+  right tool.

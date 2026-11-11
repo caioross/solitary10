@@ -190,3 +190,72 @@ def test_divisores_impares_por_fatoracao_batem_com_divisao_por_tentativa():
 
     for m in list(range(1, 400, 2)) + [3455, 10365, 76293945, 3**5 * 5**3]:
         assert set(_divisores_impares_maiores_que_1(m)) == bruto(m), m
+
+
+def _ordem_bruta(p: int, q: int) -> int:
+    x, o = p % q, 1
+    while x != 1:
+        x, o = x * p % q, o + 1
+    return o
+
+
+def test_fecho_por_ordens_com_extras_genericos_contra_forca_bruta():
+    # Block 8: with a planted target sigma(N) = num·N/den, extras = primes(num) need not
+    # contain 3: it may meet S or contain p (the empty set is tested too, as an edge
+    # case). Truth: orders by repeated multiplication, and the closure by stripping
+    # sigma(p^a) for every even a up to 2·max(S ∪ extras) + 20, beyond the bound
+    # a + 1 <= max(S ∪ extras) - 1 that the header implies (a + 1 is itself an order
+    # ord_q(p), which divides q - 1).
+    import random
+    from sympy import factorint
+    rng = random.Random(4242)
+    pool = list(primerange(5, 200))
+    familias = [frozenset(), frozenset({3}), frozenset({3, 7}), frozenset({11, 31}),
+                frozenset({7, 13, 19}), frozenset({3, 5}), frozenset({331}),
+                frozenset({3, 11, 41, 61}), frozenset({211, 421})]
+    casos = []
+    for _ in range(150):
+        S = frozenset(rng.sample(pool, rng.randrange(1, 7)))
+        p = rng.choice(sorted(S))
+        ex = rng.choice(familias)
+        if rng.random() < 0.2:
+            ex |= {p}                                  # an extra equal to p is skipped
+        if rng.random() < 0.2:
+            ex |= {rng.choice(sorted(S))}              # an extra inside S
+        casos.append((p, S, ex))
+    for p in (5, 7, 11, 13, 31):                       # a closure split between S and extras
+        for a in (2, 4, 6, 8, 10):
+            fac = sorted(int(q) for q in factorint(sigma_pp(p, a)))
+            if max(fac) > 1000:
+                continue
+            for mask in range(1 << min(len(fac), 3)):
+                ex = frozenset(f for i, f in enumerate(fac) if mask >> i & 1)
+                casos.append((p, frozenset(set(fac) - ex) | {p}, ex))
+            if 3 in fac:                               # 3 neither in S nor in the extras
+                casos.append((p, frozenset(set(fac) - {3}) | {p}, frozenset()))
+                casos.append((p, frozenset({p}), frozenset(set(fac) - {3})))
+    ordem_por_extra = precisa_extra = recusado_sem_3 = 0
+    for p, S, ex in casos:
+        permitidos = set(S | ex) - {p}
+        com_3 = (set(S) | {3}) - {p}                   # what the default extras = {3} allow
+        D = {o for o in (_ordem_bruta(p, q) for q in permitidos) if o > 1 and o % 2 == 1}
+        assert ordens_impares(p, S, ex) == D, (p, S, ex)
+        ordem_por_extra += bool(D - {_ordem_bruta(p, q) for q in com_3})
+        validos = [a for a in range(2, 2 * max(S | ex) + 21, 2)
+                   if _strip(sigma_pp(p, a), permitidos) == 1]
+        assert expoentes_validos_ordens(p, S, ex) == validos, (p, S, ex)
+        for a in range(2, 42, 2):
+            fecha = _strip(sigma_pp(p, a), permitidos) == 1
+            assert sigma_fecha_em(p, a, S, ex) == fecha, (p, a, S, ex)
+            fecha_3 = _strip(sigma_pp(p, a), com_3) == 1
+            precisa_extra += fecha and not fecha_3
+            recusado_sem_3 += fecha_3 and not fecha
+    # the cases do separate the extras from {3}, in both directions
+    assert ordem_por_extra >= 30 and precisa_extra >= 15 and recusado_sem_3 >= 3
+    # and each of these exponents exists only through the extras
+    assert expoentes_validos_ordens(5, frozenset({5, 7}), frozenset({31})) == [2]
+    assert expoentes_validos_ordens(5, frozenset({5, 7})) == []
+    # P01 = 5^2 7^2 11^2 19^2 31^4, num = 3^2·127·17351: sigma(19^2) = 381 = 3·127
+    assert expoentes_validos_ordens(19, frozenset({5, 7, 11, 19, 31}),
+                                    frozenset({3, 127, 17351})) == [2]
+    assert expoentes_validos_ordens(19, frozenset({5, 7, 11, 19, 31})) == []

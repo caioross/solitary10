@@ -12,8 +12,8 @@ for a friend of 10, up to and including $\omega(N) \ge 10$ — the best bound in
 literature — is now re-derived mechanically by exact arithmetic in under ten minutes
 on one core. The least friend of 10, if it exists, exceeds
 $10^{32}$ — a certified bound, two orders of magnitude beyond the uncertified one in
-the literature. Along the way, six defects in four recent papers were found, proved,
-and written up as a corrigenda note.
+the literature. Along the way, seven defects in five recent papers were found and
+proved; six of them are written up as a corrigenda note.
 
 ---
 
@@ -52,16 +52,23 @@ authoritative list, with full hypotheses, is
 | **G** | the least friend of 10, if any, exceeds $\mathbf{10^{32}}$ | `PROVED-CONDITIONAL` (A–D + $\omega(N) \ge 10$) | certifies, and improves 100×, the uncertified $> 10^{30}$ of OEIS A074902; 34.5 million exact equality tests, sharded under a machine-checked partition |
 | **H** | $\omega(N) \ge 7$ | `PROVED-CONDITIONAL` (A–D + Zsygmondy + LTE), adversarially reviewed | Thm 1.2 of arXiv:2404.00624, whose proof is a hand analysis of 19 divisibility chains; here 0.1 s, and the certifier rediscovers the pin $3221 \mid \Phi_5(11)$ — the entry $f^{11}_{3221} = 5$ of the paper's hand-built Table 4 — unaided |
 | **I** | $\omega(N) \ge 9$ | `PROVED-CONDITIONAL`, adversarially reviewed (limits stated) | not new — Thackeray (arXiv:2310.15900) has $\omega(N) \ge 10$; an independent and mechanical reproduction in a few seconds, with a method built for $k \ge 9$ |
-| **J** | $\omega(N) \ge 10$ | `PROVED-CONDITIONAL`, adversarially reviewed (limits stated) | not new — this *is* Thackeray's theorem (about 25 CPU-hours there); reproduced by a different method in about 6 minutes: 2 298 715 nodes for $\omega = 9$, zero friends, zero refusals |
+| **J** | $\omega(N) \ge 10$ | `PROVED-CONDITIONAL`, adversarially reviewed (limit stated) | not new — this *is* Thackeray's theorem (about 25 CPU-hours there); reproduced by a different method in about 6 minutes: 2 298 715 nodes for $\omega = 9$, zero friends, zero refusals, every primality claim above $2^{64}$ proved |
 
-Results I and J come from the recursive certifier, which has now had its own adversarial
-pass ([`results/PHASE_1.md`](results/PHASE_1.md) §7.4): no false kill and no false
-certificate were found in the committed code, and six defects were found and closed —
-two of them latent soundness holes that no completed run had triggered. The $\omega = 9$ run was
-then replayed and every decision in it re-derived independently, family by family
-(§7.6); no defect was claimed. Both results stay marked as not load-bearing: the review
-could not drive a planted friend end to end through the partition, which is specific to
-the target 9/5, and the label says so.
+Results I and J come from the recursive certifier, which has had three adversarial passes
+([`results/PHASE_1.md`](results/PHASE_1.md) §7.4, §8.4 and §8.9): no false kill and no false
+certificate were found, and the defects found were closed or deferred with reasons (§8.8) — two of them latent
+soundness holes that no completed run had triggered. The $\omega = 9$ run was replayed
+and every decision in it re-derived independently, family by family (§7.6, §8.6). Since
+Block 8 the certifier is generic in the target, so **planted friends** — any $N_0$ with
+the structural hypotheses, its own $I(N_0)$ as target — are driven end to end through
+the real partition: 76 of them in the test suite and the 9 145 of a deterministic
+grid are all found, with no node on a friend's path dropping it, and a mutation harness
+checks that deliberate defects are caught (74 of 75 are; the 75th removes a check of the certificate verifier that the proof does not need). Every integer the runs rely on being prime above $2^{64}$ is proved, by Miller–Rabin with
+13 bases below $3.3 \cdot 10^{24}$ and by elliptic-curve certificates above (2 699 of them,
+checked by an exact verifier). Both results stay marked as not load-bearing, and the
+label states the one limit left: the finite exponent bound is tested on planted friends
+statement by statement, not end to end, because where the certifier branches on it
+every friend keeps a slack of at least 2 (§8.3).
 
 Nothing above is claimed as a new theorem about 10. What is new is the *machinery*: a
 single exact-arithmetic certifier that reproduces years of hand case analysis in seconds,
@@ -69,21 +76,24 @@ refuses honestly where the theory runs out, and documents exactly where that is.
 
 ### Corrigenda to the literature
 
-Exact recomputation against the verbatim arXiv text turned up six defects, all proved
-and certified by [`experiments/verifica_erratas.py`](experiments/verifica_erratas.py)
-and 29 tests. None of them topples a main theorem; one has already propagated into a
-later paper.
+Exact recomputation against the verbatim arXiv text turned up seven defects (six
+catalogue entries), all proved and certified by
+[`experiments/verifica_erratas.py`](experiments/verifica_erratas.py) and
+31 tests. None of them topples a main theorem; one has already propagated
+into a later paper.
 
 | | Paper | Defect | Label |
 |---|---|---|---|
 | E1 | arXiv:2404.00624 Lemma 2.3 = arXiv:2409.04451 Lemma 23 | false as stated (equality in the all-ones partition); the downstream proofs need the corrected form | `PROVED` |
 | E2 | arXiv:2404.00624 Remark 3.7, eq. (7) | the displayed derivation gives $\Omega(m) \ge \omega(N) + 2a - 2$, not $+\,2a-1$ | `PROVED` |
-| E3 | arXiv:2404.00624 Thm 1.10 | its bound is the exact optimum of the relaxation used — the missing unit in (7) is not recoverable by that argument | `PROVED` |
-| E4 | arXiv:2404.00624 Cor. 1.11 (repeated in arXiv:2504.08295) | as proved, it only gives $N < 5 \cdot 6^{(2^{K-2a+2}-1)^2}$ | `PROVED` |
-| E5 | arXiv:2412.02701 Thm 1.2 | effective only for the 2nd to 5th smallest prime ($X_6 < 1$); the title and abstract promise all primes | `PROVED` |
-| E6 | arXiv:2404.00624 Thm 1.2, Case 12 | the printed factor $381/361 = I(19^2)$ should be $I(23^2) = 553/529$; the case still closes | `PROVED` |
+| E2 (cont.) | arXiv:2404.00624 Thm 1.10 | its bound is the exact optimum of the relaxation used — the missing unit in (7) is not recoverable by that argument | `PROVED` |
+| E3 | arXiv:2404.00624 Cor. 1.11 (repeated in arXiv:2504.08295) | as proved, it only gives $N < 5 \cdot 6^{(2^{K-2a+2}-1)^2}$ | `PROVED` |
+| E4 | arXiv:2412.02701 Thm 1.2 | effective only for the 2nd to 5th smallest prime ($X_6 < 1$); the title and abstract promise all primes | `PROVED` |
+| E5 | arXiv:2404.00624 Thm 1.2, Case 12 | the printed factor $381/361 = I(19^2)$ should be $I(23^2) = 553/529$; the case still closes | `PROVED` |
+| E6 | arXiv:2310.15900 Cor. 6 | false as printed: the hypothesis must hold for every prime $q > r$, not only for the prime factors of $n$ ($n = 11^2 \cdot 5^{604}$); the theorem $\omega(N) \ge 10$ is not affected | `PROVED` |
 
-Catalogue: [`results/ERRATA.md`](results/ERRATA.md). Manuscript:
+Catalogue (whose numbering the table follows): [`results/ERRATA.md`](results/ERRATA.md).
+Manuscript, E1–E5 so far:
 [`publication/errata_friends_of_10.tex`](publication/errata_friends_of_10.tex), with its
 submission notes in [`publication/SUBMISSION_GUIDE.md`](publication/SUBMISSION_GUIDE.md).
 
@@ -123,17 +133,25 @@ and everything else follows from reading it one prime at a time.
   truncation.
 
 Soundness is tested with **planted targets**: a fabricated solution is injected into the
-search space and the certifier is required to find it exactly once. Two boundary-case
-bugs of the catastrophic kind (`<` where `≤` was meant) were caught this way before they
-could certify anything.
+search space and the certifier is required to find it. Two boundary-case bugs of the
+catastrophic kind (`<` where `≤` was meant) were caught this way before they could
+certify anything. Since Block 8 the recursive certifier accepts any target
+$t = I(N_0)$, and a mutation harness
+([`experiments/planted_mutations.py`](experiments/planted_mutations.py)) checks that
+deliberate defects in it are caught by the planted tests.
 
 ### Where the frontier is
 
-$\omega = 9$ now terminates, so the certifier stands where the literature stands:
-$\omega(N) \ge 10$. The next case, $\omega = 10$, would be beyond it and has not been
-attempted; before any such claim the partition has to be made target-generic, so that
-planted friends can be driven through the whole machine, and the final code reviewed
-as a whole ([`results/PHASE_1.md`](results/PHASE_1.md) §7.7).
+$\omega = 9$ terminates, so the certifier stands where the literature stands:
+$\omega(N) \ge 10$. The next case, $\omega = 10$, was attempted in Block 8, after the
+partition was made target-generic, and it
+**stops**: at a near-tight node with *three* unknown primes, such as
+$C = \{5, 7, 11, 13, 31, 97, 52361\}$, the split below leaves about 26 million values of
+the smallest unknown to enumerate, each with its own subtree, and the finite exponent
+bound needs a bound on all the unknowns, which three of them do not have
+([`results/PHASE_1.md`](results/PHASE_1.md) §8.8). The method closes near-tight nodes
+with at most two unknowns; $\omega(N) \ge 11$ needs a new idea for three: the
+enumeration left is finite but out of practical reach.
 
 The obstruction at $\omega = 9$ was diagnosed rather than guessed. At "almost tight"
 nodes such as $C = \{5, 7, 11, 13, 31, 97, 52361\}$ the product of suprema falls short
@@ -174,7 +192,7 @@ Three blocks were spent on it:
 python -m venv venv
 venv/Scripts/activate            # Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
-pytest -q                        # 147 tests, about 25 s
+pytest -q                        # 618 tests (15 skipped by default), about 5 min
 ```
 
 | Command | Certifies | Time |
@@ -187,13 +205,17 @@ pytest -q                        # 147 tests, about 25 s
 | `python experiments/shards_10e32.py` | G: the $10^{32}$ sweep as a verified partition of shards | tens of minutes |
 | `python experiments/elimina_omega6.py` | H: $\omega \ge 7$ by divisibility chains | 0.1 s |
 | `python experiments/elimina_omega_k.py --k-max 9` | I, J: $\omega \ge 10$ by the recursive certifier | ≈ 6 min (`--k-max 8`: seconds) |
-| `python experiments/verifica_erratas.py` | the six corrigenda | seconds |
+| `python experiments/certify_primes.py --k-max 9` | every primality claim of the runs above $2^{64}$ (certificates in `data/`) | ≈ 15 min |
+| `python experiments/planted_sweep.py` | 9 145 planted friends found end to end, none dropped on its path | ≈ 2 min |
+| `python experiments/planted_mutations.py --no-frozen` | 75 deliberate defects of the certifier and of the certificate verifier, each caught by a planted friend, a node check or a statement test, except one check proved unnecessary | ≈ 11 min |
+| `python experiments/verifica_erratas.py` | the corrigenda | seconds |
 
 Every command prints its result together with the full conditional label it is entitled
 to. All arithmetic supporting a claim is `int`, `fractions.Fraction` or
-`sympy.Rational`; floating point appears only in display. Where a result depends on a
-library routine (`sympy.factorint`, `n_order`, `isprime`, …) the label says so, and the
-routine is cross-checked against an independent implementation in the tests.
+`sympy.Rational`; floating point appears only in display (and in the untrusted
+certificate generator, whose output an exact verifier checks). Where a result depends
+on a library routine (`sympy.factorint`, `isprime` below $2^{64}$, …) the label says so,
+and the routine is cross-checked against an independent implementation in the tests.
 
 ## Layout
 
@@ -201,8 +223,10 @@ routine is cross-checked against an independent implementation in the tests.
 core/          exact-arithmetic primitives and the three certifiers
                  abundancy.py   σ, I, friend test           motor.py    index-pruned tree search
                  cadeias.py     valuations by orders        omega6.py   ω = 6 by chains and pinning
-                 omega_k.py     recursive certifier for any ω
-tests/         147 tests: independent re-implementations, planted targets, frozen counts
+                 omega_k.py     recursive certifier for any ω and any target
+                 primality.py   primality proofs: 13-base Miller–Rabin, elliptic-curve certificates
+data/          primality certificates for the claims of the ω ≤ 9 runs
+tests/         618 tests: independent re-implementations, planted friends, frozen counts
 experiments/   reproducible command-line scripts (each takes --help)
 results/       RESULTS.md (labelled statements) · PHASE_0.md, PHASE_1.md (phase reports)
                ERRATA.md (corrigenda catalogue) · FAILURES.md (abandoned attacks, with reasons)

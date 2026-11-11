@@ -14,15 +14,21 @@ Base matemática (rotulada):
     Com a par, a+1 ímpar: só ordens ímpares contribuem.
   [Zsygmondy, clássico] p >= 5, d ímpar >= 3: Phi_d(p) tem primo primitivo q com
     ord_q(p) = d (sem exceções nesse regime); q ≡ 1 (mod d); q = 3 impossível.
-    => todo divisor d > 1 de a+1 é ordem ord_q(p) de algum q em S \\ {p}.
+    => todo divisor d > 1 de a+1 é ordem ord_q(p) de algum q em S \\ {p}
+       (target 9/5; for a generic target num/den the witness q is a prime of sigma(N),
+       so it lies in (S ∪ extras) \\ {p}, extras = primes of num: see ordens_impares).
 
 Consequências implementadas:
-  - v_q_sigma: a fórmula acima, exata, sem fatorar nada.
+  - v_q_sigma: the formula above, exact. It needs ord_q(p), hence the factorization of
+    q - 1 (fatoracao_q_menos_1), but never a factorization of sigma(p^a). Used by the
+    tests only; the certifier uses v_q_sigma_direto.
   - sigma_fecha_em: teste EXATO de "todos os fatores primos de sigma(p^a) estão em
-    S ∪ {3}" por reconstrução: sigma(p^a) == prod_{q em S∪{3}} q^{v_q_sigma(q,p,a)}.
-    (Sem fatoração: as valuações vêm da fórmula; a igualdade fecha a conta.)
-  - ordens_impares: D(p, S) = {ord_q(p) : q em S \\ {p}, ordem ímpar > 1} — candidatos
-    a divisores de a+1.
+    S ∪ extras" (extras = primes of the numerator of the target; {3} for 9/5) por
+    reconstrução: sigma(p^a) == prod_{q em S ∪ extras} q^{v_q_sigma_direto(q,p,a)}.
+    (No factorization and no orders: each valuation is v_q(p^{a+1} - 1) - v_q(p - 1),
+    by modular exponentiation; the equality closes the account.)
+  - ordens_impares: D(p, S) = {ord_q(p) : q em (S ∪ extras) \\ {p}, ordem ímpar > 1} —
+    candidatos a divisores de a+1.
   - expoentes_validos_ordens: expoentes válidos de p num conjunto COMPLETO S
     (equivalente ao FECHO ciclotômico do Bloco 1, mas por ordens + reconstrução:
     escala para max(S) grande).
@@ -35,7 +41,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from sympy import divisors, n_order
+from sympy import divisors, factorint
+
+from core.primality import record_claim
 
 # ---------------------------------------------------------------------------
 # valuações e ordens
@@ -52,9 +60,39 @@ def v_p(q: int, n: int) -> int:
 
 
 @lru_cache(maxsize=1 << 16)
+def fatoracao_q_menos_1(q: int) -> tuple[tuple[int, int], ...]:
+    """Prime factorization of q - 1 as ((ell, e), ...), from sympy.factorint, with one
+    check of our own (Block 8), that the product is q - 1 exactly; every prime factor is
+    also passed to core.primality.record_claim, which keeps it only while the ledger is
+    enabled and only if it is >= 2^64 (for experiments/certify_primes.py; below 2^64
+    sympy.isprime is a proof)."""
+    fat = sorted((int(ell), int(e)) for ell, e in factorint(q - 1).items())
+    prod = 1
+    for ell, e in fat:
+        prod *= ell ** e
+        record_claim(ell)
+    if prod != q - 1:
+        raise ArithmeticError(f"factorint({q} - 1) does not multiply back")
+    return tuple(fat)
+
+
+@lru_cache(maxsize=1 << 16)
 def ordem_mod(p: int, q: int) -> int:
-    """ord_q(p): ordem multiplicativa de p módulo o primo q (exige q ∤ p)."""
-    return int(n_order(p, q))
+    """ord_q(p): ordem multiplicativa de p módulo o primo q (exige q ∤ p).
+    Block 8: computed here from the factorization of q - 1 instead of sympy.n_order, so
+    that the only primality claims involved are the recorded factors of q - 1. Start from
+    o = q - 1 (p^(q-1) ≡ 1 mod q, checked) and remove each prime ell of q - 1 while
+    p^(o/ell) ≡ 1 (mod q): the result is the order, since it divides q - 1, p^o ≡ 1, and
+    p^(o/ell) ≢ 1 for every prime ell of o."""
+    o = q - 1
+    if pow(p, o, q) != 1:
+        raise ArithmeticError(f"p^(q-1) != 1 (mod q): q = {q} is not a prime, or q | p = {p}")
+    for ell, e in fatoracao_q_menos_1(q):
+        for _ in range(e):
+            if pow(p, o // ell, q) != 1:
+                break
+            o //= ell
+    return o
 
 
 @lru_cache(maxsize=1 << 16)
@@ -92,11 +130,13 @@ def v_q_sigma_direto(q: int, p: int, a: int) -> int:
 def v_q_sigma(q: int, p: int, a: int) -> int:
     """v_q(sigma(p^a)) pela fórmula de Nielsen/Voight (q primo ímpar, q != p).
 
-    Justificativa (LTE): sigma(p^a) = (p^{a+1}-1)/(p-1). Se o = ord_q(p) não divide
-    a+1, então q ∤ p^{a+1}-1 e q ∤ p-1 dividem juntos... (caso o=1: q | p-1 e
-    v_q(p^{a+1}-1) = v_q(p-1) + v_q(a+1), subtraindo v_q(p-1) sobra v_q(a+1);
-    caso o>1, o | a+1: q ∤ p-1, v_q(p^{a+1}-1) = v_q(p^o - 1) + v_q((a+1)/o * o /o)
-    = v_q(p^o-1) + v_q(a+1) por LTE aplicado a (p^o)^{(a+1)/o} - 1.)
+    Justification (LTE), with o = ord_q(p) and sigma(p^a) = (p^{a+1} - 1)/(p - 1):
+      - o ∤ a+1: then o != 1, q ∤ p - 1 and q ∤ p^{a+1} - 1, so the valuation is 0;
+      - o = 1: q | p - 1 and v_q(p^{a+1} - 1) = v_q(p - 1) + v_q(a+1); subtracting
+        v_q(p - 1) leaves v_q(a+1);
+      - o > 1, o | a+1: q ∤ p - 1, and LTE applied to (p^o)^{(a+1)/o} - 1 gives
+        v_q(p^{a+1} - 1) = v_q(p^o - 1) + v_q((a+1)/o) = v_q(p^o - 1) + v_q(a+1),
+        because o | q - 1 and hence q ∤ o.
     Testada exaustivamente contra a valuação direta em test_cadeias.py.
     """
     if q == 2:
@@ -182,8 +222,18 @@ def sigma_fecha_em(p: int, a: int, conjunto: frozenset[int],
 def _divisores_impares_maiores_que_1(m: int) -> frozenset[int]:
     """Divisores ímpares > 1 de m, pela fatoração (sympy.divisors). A divisão por
     tentativa até sqrt(m) não escala: m pode ser uma ordem módulo um primo de
-    dezenas de bits (o custo aqui é o de fatorar m, que divide q - 1 já fatorado
-    por n_order)."""
+    dezenas de bits. (Block 8: sympy.divisors factors m again, without recording its
+    primality claims. Harmless: every element returned is a product of the factors that
+    sympy.factorint finds for m, hence a true divisor of m, so a wrong primality answer can
+    only make the list INCOMPLETE. The callers reached by the certifier test "every
+    listed divisor is in D" (_candidatos_m, used by expoentes_validos_ordens and as case
+    (A) of omega_k._expoentes_com_primo_grande; case (B1) composite of that lemma, through
+    the divisors of e), where a missing divisor can only ADD candidates, or "exactly one
+    listed divisor is outside D" (case (B2)), where a missing divisor can only make m a
+    candidate or leave no listed divisor outside D, and then m is already a candidate of
+    (A), which reads the same list. Every candidate is then decided exactly by
+    sigma_fecha_em.
+    omega_k._expoentes_viaveis_unico uses it as a generator of candidates: tests only.)"""
     if m <= 1:
         return frozenset()
     return frozenset(d for d in divisors(m) if d > 1 and d % 2 == 1)
@@ -192,9 +242,9 @@ def _divisores_impares_maiores_que_1(m: int) -> frozenset[int]:
 def _candidatos_m(D: set[int]) -> list[int]:
     """m ímpares > 1 cujos divisores > 1 estão todos em D (implica m em D).
 
-    Enumera os DIVISORES de m (custo O(sqrt m)) em vez de varrer todos os ímpares
-    < m (custo O(m)): mesma semântica, e evita a parede de desempenho quando os
-    conjuntos têm primos grandes (relevante para omega >= 7).
+    Enumerates the DIVISORS of m, by factoring m (_divisores_impares_maiores_que_1),
+    instead of scanning every odd number < m (cost O(m)): same semantics, and no
+    performance wall when the sets have large primes (relevant for omega >= 7).
     """
     return [m for m in sorted(D)
             if _divisores_impares_maiores_que_1(m) <= D]
@@ -216,6 +266,7 @@ def expoentes_validos_ordens(p: int, conjunto: frozenset[int],
 __all__ = [
     "v_p",
     "ordem_mod",
+    "fatoracao_q_menos_1",
     "v_q_sigma",
     "v_q_sigma_direto",
     "v_q_potencia_menos_1",

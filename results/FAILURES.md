@@ -14,6 +14,92 @@ Entry format:
 
 ---
 
+## [2026-11-11] Phase 1, Block 8 — ω = 10 by the method of Blocks 5–7 (current dead end)
+
+- **What was tried:** `certifica_omega(10)` on the target-generic, reviewed code of Block 8
+  (PHASE_1.md §8.8), and a survey run that records every refusal and goes on
+  (on the code of 10 November, by the unversioned predecessor of
+  `python experiments/survey_omega_k.py --k 10 --seconds 14400`, whose first 15 000 nodes on
+  the code of the Block 8 commit give the same six refusals; not a certificate).
+- **Why it failed (precise reason):** the run refuses after 10 804 nodes at
+  C = {5, 7, 11, 13, 31, 97, 52361}, s = 3, a₁ = 2: the index interval of the smallest
+  unknown, (102 507 528, 615 045 164], exceeds `MAX_INDEX_SPAN`. The split at B_min still
+  works on side (a), U₁ ≤ B − 1. On side (b), U₁ > B, the finite exponent bound needs a
+  bound L on *every* unknown, and with three unknowns there is none: for U₁ just above B
+  the remainder R′ = t/(prod_sup·U₁/(U₁−1)) is just above 1 and U₂, U₃ are unbounded. What
+  is left is to enumerate U₁ over about 26 million primes, each with an s = 2 subtree.
+  The survey visited 47.5 million nodes in 4 hours, met six such refusals (seventh prime
+  52361, 52363, 52369, 52379, 52387, 52391; all s = 3, a₁ = 2) and never left a₁ = 2; at
+  the measured 130 primes per second the interval above alone is about 55 hours, and the
+  family continues (the next node, seventh prime 52433, is under the limit (1.39·10⁸ wide)).
+- **What to keep:** the enumeration left is finite but impractical (days per interval, and the family continues). The
+  method closes near-tight nodes with at most two unknowns (the last unknown by
+  cyclotomic equations, two unknowns by the finite exponent bound after the split).
+  Three candidate ingredients, none attempted: a finite exponent bound that needs only the
+  two largest unknowns bounded in terms of the smallest; a cyclotomic equation for the
+  last *two* unknowns (σ(U₃^a) is made of primes of C ∪ extras, U₁ and U₂, all smaller
+  than U₃); tails that work on side (b). Thackeray's paper stops at the same place (its §5).
+
+## [2026-11-11] Phase 1, Block 8 — defects found while making the certifier generic and proving primality (all closed)
+
+- **What was tried:** removing the guard that restricted the partition to 9/5, so that
+  planted friends could be driven through it; recording the primality claims of the runs.
+- **Why it failed (precise reason, one per defect):**
+  1. *Statements true only because the numerator of 9/5 is a power of 3.* About a dozen
+     steps of the partition (closures modulo C ∪ {3}, witnesses searched in C, the v₅ and
+     v₃ budgets, the range of a₁, the caps of the last-unknown solver, the total-closure
+     lemma) were sound for 9/5 only. With the guard removed and nothing else changed,
+     the certifier *certified* the absence of friends for the target
+     I(5²·7²·11²·13²·17²·19²) at k = 6 — a false certificate. Every statement was
+     re-derived for t = num/den (PHASE_1.md §8.1); the 9/5 trees did not change.
+  2. *An unbounded factorisation at the root.* A target whose num or den had two large
+     primes hung for hours instead of being refused. Now: bounded Pollard rho, then refusal.
+  3. *A ledger with a hole.* The first ledger of primality claims recorded the answers of
+     `isprime` and `factorint` but not the factorisations made inside `sympy.n_order`
+     (one claim of 67 bits at k = 9, below ψ₁₃). Orders are now computed in
+     `core/cadeias.py` from a recorded factorisation of q − 1.
+  4. *Trust where a check was cheap.* The small primes stripped from cyclotomic values
+     were taken from `factorint` unchecked (now checked against our own sieve), and the
+     certificate verifier read one field twice, so that an object imitating a dictionary
+     could show a composite to one check and a prime to another (stored certificates were
+     never affected; the verifier now accepts plain dicts and lists of plain ints only).
+  5. *A refusal guard measured with the wrong bound.* The index fallback with one unknown
+     measured its interval with L₁ ≈ 2·B_min instead of B_min and refused all-fixed nodes
+     whose window holds one or two primes (two planted friends, now R25 and R26 of
+     tests/test_planted.py). It changed no certificate, only refusals.
+- **What to keep:** a certifier written for one target hides its assumptions in the
+  arithmetic of that target; planted friends only test what they can reach, so the
+  mutation harness (`experiments/planted_mutations.py`) and statement-level tests are
+  needed alongside them (PHASE_1.md §8.3).
+
+## [2026-11-11] Phase 1, Block 8 — a node with one unknown of 81 bits is refused (open)
+
+- **What was tried:** the planted friend N₀ = 5²·q⁴·r² with q = 1050367 (q ≡ 1 mod 3) and
+  r = Φ₅(q) = σ(q⁴), a prime of 81 bits (r ≡ 2 mod 3), from the root (k = 3) and from the
+  node C = {5, q}, s = 1, a₅ = 2.
+- **Why it failed (precise reason):** at that node both budgets are 0, so the
+  last-unknown solver needs L(C). The prime 175061 of q − 1 has the free prime q in C_ℓ,
+  and Φ₁₇₅₀₆₁(U_max) would have about 1.4·10⁷ bits: the size gate declines the whole
+  solver (declining one ℓ alone would lose cases). The tails do not apply
+  (prod_sup < t); the finite exponent bound is not offered at s = 1 (`_ramos_cor6`
+  requires lo ≥ B_min, which never holds at a live node with s = 1); and the index
+  interval of r is about 10²⁴ wide, above `MAX_INDEX_SPAN`. The certifier refuses
+  (`NaoCertificavel`), at that node and from the root alike: the friend is never lost,
+  and with a_q fixed the closure pins r and the friend is found. In the coverage the
+  review measured on the 9/5 runs with k ≤ 9, neither the size gate nor this refusal
+  is reached.
+- **What to keep:** the condition lo ≥ B_min of `_ramos_cor6` is needed only for
+  s ≥ 2 (at s = 1, L = L1 bounds the only unknown). Offering the bound at s = 1, with
+  `R_MAX_PROP9` ≥ q (here q > 10⁶), is the candidate fix: a trial on a modified copy
+  gave A_q = 9 and found the friend, left the trees of k ≤ 8 unchanged, and added
+  Prop. 9 work at many later nodes with s = 1. It is a change of strategy and must be
+  measured on the k = 9 tree, by a versioned script, before k = 10. Dropping a single ℓ
+  by a size comparison is sound only when every prime of C_ℓ has a cap, and does not
+  resolve this node. Before k = 10, count on the k = 9 tree, by a versioned script, the
+  size-gate declines, the calls of `_ramos_cor6` at s = 1 and the `MAX_INDEX_SPAN`
+  refusals. Pinned by
+  `tests/test_planted.py::test_known_refusal_one_unknown_with_both_budgets_zero`.
+
 ## [2026-11-10] Phase 1, Block 7 — defects of the recursive certifier found on the way to ω = 9 (all closed)
 
 - **What was tried:** closing k = 9 with the split at B_min (PHASE_1.md §7), and then

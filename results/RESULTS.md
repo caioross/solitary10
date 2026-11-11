@@ -1,6 +1,6 @@
 # RESULTS — labelled statements (rigour rules: `docs/METHODOLOGY.md`)
 
-Last update: 2026-11-10 (Phase 1, Block 7). Details: `PHASE_0.md`, `PHASE_1.md`.
+Last update: 2026-11-11 (Phase 1, Block 8). Details: `PHASE_0.md`, `PHASE_1.md`.
 
 ## Notation
 
@@ -101,7 +101,7 @@ split the bound fires at k = 8 too, 17 branchings.)*
 
 | # | Statement | Label |
 |---|---|---|
-| J | **Every friend of 10 has ω(N) ≥ 10** (no friend has ω = 9: 2 298 715 nodes, 22 653 splits at B_min, 44 403 branchings by the finite exponent bound, 201 complete sets with a large prime, zero friends, zero `NaoCertificavel`, about 6 minutes on one core; k ≤ 8 as in I) | `[PROVED-CONDITIONAL: Theorems A–D and Lemmas/Fact 0 of Phase 0 + Zsygmondy, LTE and the Nielsen/Voight valuation formula (classical) + correctness of core/omega_k.py, core/cadeias.py and core/omega6.py (adversarial passes PHASE_1.md §2.5 and §7.4 and replay audit §7.6, with the limits listed there: no end-to-end planted friend through the 9/5-specific partition; BPSW primality above 2⁶⁴) and of the primitives ALVO, I_pp, sigma_pp and sup_pp they import from core/motor.py (Block 1 engine, adversarial pass PHASE_1.md §1.5) + correctness of sympy.n_order/factorint/isprime/nextprime/primerange/integer_nthroot/cyclotomic_poly/divisors/totient in the calls consumed]` |
+| J | **Every friend of 10 has ω(N) ≥ 10** (no friend has ω = 9: 2 298 715 nodes, 22 653 splits at B_min, 44 403 branchings by the finite exponent bound, 201 complete sets with a large prime, zero friends, zero `NaoCertificavel`, about 6 minutes on one core; k ≤ 8 as in I) | `[PROVED-CONDITIONAL: Theorems A-D and Lemmas/Fact 0 of Phase 0 + Zsygmondy, LTE and the Nielsen/Voight valuation formula (classical) + correctness of core/omega_k.py, core/cadeias.py, core/omega6.py, core/primality.py and of the primitives ALVO, I_pp, sigma_pp and sup_pp of core/motor.py (adversarial passes: results/PHASE_1.md sections 1.5, 2.5, 7.4, 8.4 and 8.9; replay audit 7.6 with its open items closed in 8.6 except a run on other hardware; planted friends driven end to end, 8.2, with the limit stated in 8.3: the finite exponent bound is tested statement by statement, not end to end) + the primality claims of the run above 2^64, proved when experiments/certify_primes.py --k-max K exits 0 for the same K (this script does not check them; without that run they rest on sympy's BPSW), and sympy.isprime below 2^64 and its answers 'composite' above 2^64 at the sites listed in 8.5 + correctness of sympy.factorint/nextprime/primerange/integer_nthroot/cyclotomic_poly/divisors/totient in the calls consumed]` |
 
 Context for J: **not new** — it is Thackeray's theorem (arXiv:2310.15900, about 25 h of
 CPU there, almost all in k = 9). The value is an independent reproduction of the state of
@@ -116,9 +116,35 @@ and re-derived
 decision by decision, family by family, with no defect claimed (PHASE_1.md §7.6). The
 finite exponent bound it uses is Thackeray's own (Cor. 6 and Prop. 9). **Not
 load-bearing**: E, E′ and G keep citing the published theorem. A statement beyond the
-literature (ω(N) ≥ 11, i.e. k = 10) is NOT claimed and needs, first, a target-generic
-partition for end-to-end planted tests and an adversarial pass of the final code as a
-whole (PHASE_1.md §7.7).
+literature (ω(N) ≥ 11, i.e. k = 10) is NOT claimed: it was attempted in Block 8 and is
+not obtained (PHASE_1.md §8.8). *(Label of J updated in Block 8: the target-generic
+partition lets planted friends travel through the real partition, every primality claim
+above 2⁶⁴ is proved, `n_order` is no longer consumed; see below.)*
+
+## Phase 1, Block 8 — generic target, planted friends, primality proved (PHASE_1.md, Block 8)
+
+No new statement about 10. What changed:
+
+- **Generic target.** `core/omega_k.py` certifies the absence of solutions of
+  I(N) = t, or refuses, for any t = num/den with the structural hypotheses (N an odd square, 5 its
+  least prime, 3 ∤ N); for t = 9/5 every counter (and, before the last changes of the block, every node) equals the one of
+  Block 7. `[PROVED-CONDITIONAL: the statements of PHASE_1.md §8.1, each with a proof in the
+  header and docstrings of core/omega_k.py, adversarial round §8.4]`
+- **Planted friends end to end.** The 76 planted friends of tests/test_planted.py and
+  the 9 145 of the default grid of experiments/planted_sweep.py are found, and no node
+  on a friend's path drops it; the mutation check: 74 of 75 mutants killed, with and without the frozen counts; the survivor removes the discriminant check of the certificate verifier, which the step theorem does not need (PHASE_1.md §8.3, §8.5).
+  `[VERIFIED-NUMERICALLY: tests/test_planted.py, experiments/planted_sweep.py,
+  experiments/planted_mutations.py --no-frozen]`
+- **Primality.** All 3 890 integers ≥ 2⁶⁴ that the runs k ≤ 9 rely on being prime are
+  proved: 1 191 below ψ₁₃ by trial division and 13 Miller–Rabin bases, 2 699 above by
+  elliptic-curve certificates (`data/primality_certificates.json.gz`) checked by the exact
+  verifier of `core/primality.py`. `[PROVED: Sorenson–Webster (ψ₁₃) and the
+  Goldwasser–Kilian/Atkin–Morain step theorem + correctness of core/primality.py
+  (tests/test_primality.py, independent audit PHASE_1.md §8.5)]`
+- **ω = 10 not obtained**: the method closes near-tight nodes with at most two unknowns;
+  ω = 10 needs three (PHASE_1.md §8.8, FAILURES.md). `[HEURISTIC: measured size of the
+  obstruction, 47.5 million nodes in 4 h without leaving a₁ = 2]`
+- **New corrigendum** E6 below (Corollary 6 of arXiv:2310.15900).
 
 ## Numerical verifications
 
@@ -131,8 +157,9 @@ whole (PHASE_1.md §7.7).
 ## Corrections to the literature (full catalogue: `results/ERRATA.md`)
 
 Re-verified on 2026-08-21 in a second independent pass, on the verbatim arXiv text, with
-certificates in `experiments/verifica_erratas.py` and `tests/test_erratas.py` (29 tests).
-Publication material: `publication/`.
+certificates in `experiments/verifica_erratas.py` and `tests/test_erratas.py`
+(31 tests). Publication material: `publication/` (E1–E5). The last row was
+added on 2026-11-11 (Block 8).
 
 | Finding | Label |
 |---|---|
@@ -142,9 +169,10 @@ Publication material: `publication/`.
 | arXiv:2404.00624 v5, Cor. 1.11: as proved it supports only N < 5·6^((2^{K−2a+2}−1)²); the original form is repeated in arXiv:2504.08295 §1 | `[PROVED: direct consequence of the item above]` |
 | arXiv:2412.02701 v4, Thm 1.2: effective only for 2 ≤ r ≤ 5 (X₆ = 82944/85085 < 1, F₆ = 17017/9216 > 9/5); title/abstract promise all primes | `[PROVED: exact arithmetic, both readings of the condition]` |
 | arXiv:2404.00624 v5, Case 12 of Thm 1.2: printed factor 381/361 = I(19²) in place of I(23²) = 553/529; conclusion of the case maintained | `[PROVED: exact recomputation]` |
+| arXiv:2310.15900 v2 (and v1), Corollary 6: false as printed — the hypothesis v_q(σ₋₁(n)) = 0 is imposed only on the prime factors q > r of n, but the proof applies it to primes of σ(n) that need not divide n; counterexamples n = 11²·5⁶⁰⁴ (r = 11, bound 1, v₁₁(n) = 2) and n = 13²·3⁵⁰⁶; correct with the hypothesis for every prime q > r. Corollary 7 and the theorem ω(N) ≥ 10 are not affected (the numerator of 9/5 has no prime above 5) | `[PROVED: exact counterexamples (Φ₁₁(5) and Φ₁₃(3) prime) + corrected statement; verifica_erratas.py --bloco e7]` |
 
 ## Annotated candidates (WITHOUT own proof yet — do not use as hypotheses)
 
 - q₅ < p_{28ω} (sketch in the note on 2404.05771) and r = 5 admissible in 2412.02701 v4 — `[HEURISTIC/PENDING]`
 - Converse of Ward's mod 18 (p ≡ 1 mod 3, 2e ≡ 8 mod 18 ⟹ 9 | σ(p^{2e})) — `[VERIFIED-NUMERICALLY: p ≤ 73, e ≤ 199; short proof sketched in the Ward note]`
-- Candidate uniform lemmas for the 2p family: Thackeray's Cor. 6 (odd squares); N > d(N)²/r² generalising Thm 1.5 of 2504.08295 — `[CONJECTURE/PENDING]`
+- Candidate uniform lemmas for the 2p family: Thackeray's Cor. 6 (odd squares) in its corrected form (hypothesis on every prime q > r, ERRATA.md E6; as printed it is false); N > d(N)²/r² generalising Thm 1.5 of 2504.08295 — `[CONJECTURE/PENDING]`
